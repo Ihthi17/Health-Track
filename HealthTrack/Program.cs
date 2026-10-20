@@ -72,11 +72,7 @@ using (var scope = app.Services.CreateScope())
 
         db.SaveChanges();
 
-        // Backfill missing ClientProfile and TrainerProfile records
-        logger.LogInformation("Backfilling missing Client and Trainer profiles...");
-        await db.BackfillProfilesAsync();
-        logger.LogInformation("Profile backfill completed.");
-
+        // Create SuperAdmin FIRST before backfilling profiles
         var superEmail =
             builder.Configuration["HEALTHTRACK_SUPERADMIN_EMAIL"]
             ?? builder.Configuration["SuperAdmin:Email"];
@@ -182,6 +178,11 @@ using (var scope = app.Services.CreateScope())
         {
             logger.LogWarning("SuperAdmin credentials not found in configuration or environment variables.");
         }
+
+        // NOW backfill missing ClientProfile and TrainerProfile records
+        logger.LogInformation("Backfilling missing Client and Trainer profiles...");
+        await db.BackfillProfilesAsync();
+        logger.LogInformation("Profile backfill completed.");
     }
     catch (Exception ex)
     {
@@ -215,7 +216,7 @@ app.MapStaticAssets();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Account}/{action=Login}/{id?}")
+    pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
 // Start automatic backup scheduler

@@ -517,6 +517,7 @@
                             <a href="/superadmin/profile/edit"><i class="fas fa-edit"></i> Edit Profile</a>
                             <a href="/superadmin/profile/change-password"><i class="fas fa-key"></i> Change Password</a>
                             <form id="logoutForm" action="/Account/Logout" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
                                 <button type="submit" class="user-menu-dropdown-btn logout" style="width: 100%; text-align: left; border: none; background: none; cursor: pointer;">
                                     <i class="fas fa-sign-out-alt"></i> Logout
                                 </button>

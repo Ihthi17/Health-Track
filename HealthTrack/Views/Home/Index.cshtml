@@ -1,296 +1,259 @@
 ﻿@{
-    ViewData["Title"] = "Admin Dashboard";
+    ViewData["Title"] = "HealthTrack | Your Health, Your Journey";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container-fluid py-4">
+<!-- Hero Section -->
+<section class="py-5 bg-light w-100">
+    <div class="container-fluid py-lg-5 px-0">
+        <div class="row align-items-center g-0">
+            <div class="col-lg-6 px-4 px-lg-5">
+                <span class="badge rounded-pill bg-success-subtle text-success px-3 py-2 mb-3">
+                    YOUR PERSONAL HEALTH COMPANION
+                </span>
 
-    <!-- Dashboard Header -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold mb-1">Admin Dashboard</h2>
-            <p class="text-muted mb-0">
-                Welcome to HealthTrack Administration.
-                Manage users, trainers, and health services.
+                <h1 class="display-4 fw-bold mb-4">
+                    Build a <span class="text-success">Healthier You</span>,
+                    One Day at a Time.
+                </h1>
+
+                <p class="lead text-secondary mb-4">
+                    Track your fitness, manage appointments, follow personalised
+                    workout plans, and take control of your wellbeing with HealthTrack.
+                </p>
+
+                <div class="d-flex flex-wrap gap-3">
+                    <a asp-controller="Account"
+                       asp-action="Register"
+                       class="btn btn-success btn-lg px-4">
+                        Get Started
+                        <i class="bi bi-arrow-right ms-2"></i>
+                    </a>
+
+                    <a asp-controller="Account"
+                       asp-action="Login"
+                       class="btn btn-outline-success btn-lg px-4">
+                        Sign In
+                    </a>
+                </div>
+
+                <div class="d-flex flex-wrap gap-4 mt-4">
+                    <div>
+                        <h5 class="fw-bold mb-1">
+                            <i class="bi bi-heart-pulse text-success me-2"></i>
+                            Health
+                        </h5>
+                        <small class="text-muted">Monitor your wellbeing</small>
+                    </div>
+
+                    <div>
+                        <h5 class="fw-bold mb-1">
+                            <i class="bi bi-activity text-success me-2"></i>
+                            Fitness
+                        </h5>
+                        <small class="text-muted">Track your progress</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 px-0">
+                <div class="position-relative w-100 h-100" style="min-height: 500px;">
+                    <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1200&q=85"
+                         alt="Person exercising to improve fitness"
+                         class="img-fluid w-100 h-100"
+                         style="object-fit: cover; object-position: center;"
+                         loading="eager" />
+
+                    <div class="position-absolute bottom-0 start-0 m-3 p-3 bg-white rounded-3 shadow-sm">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-success-subtle text-success rounded-circle p-3">
+                                <i class="bi bi-graph-up-arrow fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Your Progress Matters</h6>
+                                <small class="text-muted">Every healthy choice counts.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container py-4">
+        <div class="text-center mb-5">
+            <span class="text-success fw-semibold">WHAT YOU CAN DO</span>
+            <h2 class="fw-bold mt-2">Everything You Need for Better Health</h2>
+            <p class="text-muted mx-auto" style="max-width: 650px;">
+                Manage your fitness journey in one place with tools designed
+                to help you stay consistent and motivated.
             </p>
         </div>
 
-        <span class="badge bg-success-subtle text-success px-3 py-2 mt-2">
-            <i class="bi bi-circle-fill me-1"></i> System Dashboard
-        </span>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <div class="bg-success-subtle text-success rounded-3 p-3 d-inline-block mb-3">
+                            <i class="bi bi-calendar2-check fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Appointment Management</h5>
+                        <p class="text-muted mb-0">
+                            Schedule appointments with trainers and keep
+                            track of your upcoming sessions.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <div class="bg-primary-subtle text-primary rounded-3 p-3 d-inline-block mb-3">
+                            <i class="bi bi-person-arms-up fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Workout Plans</h5>
+                        <p class="text-muted mb-0">
+                            Follow structured exercise plans and record
+                            your daily workout activities.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <div class="bg-warning-subtle text-warning rounded-3 p-3 d-inline-block mb-3">
+                            <i class="bi bi-egg-fried fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Nutrition & Diet</h5>
+                        <p class="text-muted mb-0">
+                            Organise your diet plans and develop healthier
+                            eating habits.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <div class="bg-info-subtle text-info rounded-3 p-3 d-inline-block mb-3">
+                            <i class="bi bi-heart-pulse fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Health Tracking</h5>
+                        <p class="text-muted mb-0">
+                            Record health measurements and review your
+                            progress over time.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <div class="bg-danger-subtle text-danger rounded-3 p-3 d-inline-block mb-3">
+                            <i class="bi bi-bell fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Reminders & Notifications</h5>
+                        <p class="text-muted mb-0">
+                            Stay informed about appointments, workout
+                            sessions, and important activities.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <div class="bg-secondary-subtle text-secondary rounded-3 p-3 d-inline-block mb-3">
+                            <i class="bi bi-graph-up fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Progress Reports</h5>
+                        <p class="text-muted mb-0">
+                            Review your recorded activities and understand
+                            how your fitness routine develops.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+</section>
 
-    <!-- Summary Cards -->
-    <div class="row g-4 mb-4">
-
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted mb-2">Total Users</p>
-                            <h3 class="fw-bold mb-0">@ViewBag.TotalUsers</h3>
-                            <small class="text-muted">Registered accounts</small>
-                        </div>
-                        <div class="rounded-3 bg-primary-subtle text-primary p-3">
-                            <i class="bi bi-people fs-3"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<!-- How It Works -->
+<section class="py-5 bg-light">
+    <div class="container py-4">
+        <div class="text-center mb-5">
+            <span class="text-success fw-semibold">GET STARTED</span>
+            <h2 class="fw-bold mt-2">Your Health Journey Starts Here</h2>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted mb-2">Clients</p>
-                            <h3 class="fw-bold mb-0">@ViewBag.TotalClients</h3>
-                            <small class="text-muted">Client accounts</small>
-                        </div>
-                        <div class="rounded-3 bg-success-subtle text-success p-3">
-                            <i class="bi bi-person-check fs-3"></i>
-                        </div>
+        <div class="row g-4 text-center">
+            <div class="col-md-4">
+                <div class="bg-white rounded-4 p-4 h-100 shadow-sm">
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+                         style="width: 60px; height: 60px;">
+                        <span class="fs-4 fw-bold">1</span>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted mb-2">Roles</p>
-                            <h3 class="fw-bold mb-0">@ViewBag.TotalRoles</h3>
-                            <small class="text-muted">System roles</small>
-                        </div>
-                        <div class="rounded-3 bg-info-subtle text-info p-3">
-                            <i class="bi bi-shield-check fs-3"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted mb-2">System Status</p>
-                            <h3 class="fw-bold mb-0 text-success">Online</h3>
-                            <small class="text-muted">All systems operational</small>
-                        </div>
-                        <div class="rounded-3 bg-warning-subtle text-warning p-3">
-                            <i class="bi bi-check-circle fs-3"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Management Section -->
-    <div class="row g-4 mb-4">
-
-        <div class="col-12 col-lg-8">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white border-0 pt-4 px-4">
-                    <h5 class="fw-bold mb-1">User Management</h5>
-                    <p class="text-muted small mb-0">
-                        Manage HealthTrack user accounts and roles.
+                    <h5 class="fw-bold">Create Your Account</h5>
+                    <p class="text-muted mb-0">
+                        Register and create your personal HealthTrack profile.
                     </p>
                 </div>
+            </div>
 
-                <div class="card-body p-4">
-                    <div class="row g-3">
-
-                        <div class="col-12 col-md-6">
-                            <div class="border rounded-3 p-3 h-100">
-                                <i class="bi bi-people fs-3 text-primary"></i>
-                                <h6 class="fw-bold mt-3">All Users</h6>
-                                <p class="text-muted small">
-                                    View and manage registered accounts.
-                                </p>
-                                <a asp-controller="Users"
-                                   asp-action="Index"
-                                   class="btn btn-outline-primary btn-sm">
-                                    Manage Users
-                                </a>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <div class="border rounded-3 p-3 h-100">
-                                <i class="bi bi-person-workspace fs-3 text-info"></i>
-                                <h6 class="fw-bold mt-3">Trainer Management</h6>
-                                <p class="text-muted small">
-                                    Create trainer accounts and manage invitations.
-                                </p>
-                                <a asp-controller="Trainers"
-                                   asp-action="Index"
-                                   class="btn btn-outline-primary btn-sm">
-                                    Manage Trainers
-                                </a>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <div class="border rounded-3 p-3 h-100">
-                                <i class="bi bi-person-plus fs-3 text-success"></i>
-                                <h6 class="fw-bold mt-3">Create User</h6>
-                                <p class="text-muted small">
-                                    Add a Client, Trainer, or authorized Admin.
-                                </p>
-                                <a asp-controller="Users"
-                                   asp-action="Create"
-                                   class="btn btn-outline-primary btn-sm">
-                                    Create User
-                                </a>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <div class="border rounded-3 p-3 h-100">
-                                <i class="bi bi-calendar2-check fs-3 text-warning"></i>
-                                <h6 class="fw-bold mt-3">Appointments</h6>
-                                <p class="text-muted small">
-                                    Review and manage scheduled appointments.
-                                </p>
-                                <a asp-controller="Appointments"
-                                   asp-action="Index"
-                                   class="btn btn-outline-primary btn-sm">
-                                    View Appointments
-                                </a>
-                            </div>
-                        </div>
-
+            <div class="col-md-4">
+                <div class="bg-white rounded-4 p-4 h-100 shadow-sm">
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+                         style="width: 60px; height: 60px;">
+                        <span class="fs-4 fw-bold">2</span>
                     </div>
+                    <h5 class="fw-bold">Set Your Goals</h5>
+                    <p class="text-muted mb-0">
+                        Organise your workouts, diet plans, and appointments.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="bg-white rounded-4 p-4 h-100 shadow-sm">
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+                         style="width: 60px; height: 60px;">
+                        <span class="fs-4 fw-bold">3</span>
+                    </div>
+                    <h5 class="fw-bold">Track Your Progress</h5>
+                    <p class="text-muted mb-0">
+                        Record activities and work consistently towards your goals.
+                    </p>
                 </div>
             </div>
         </div>
-
-        <!-- Quick Information -->
-        <div class="col-12 col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white border-0 pt-4 px-4">
-                    <h5 class="fw-bold mb-0">Administration</h5>
-                </div>
-
-                <div class="card-body px-4">
-                    <div class="d-flex align-items-start mb-4">
-                        <i class="bi bi-shield-check text-success fs-4 me-3"></i>
-                        <div>
-                            <h6 class="fw-semibold mb-1">Access Control</h6>
-                            <p class="text-muted small mb-0">
-                                Restrict administrative operations to authorized roles.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="d-flex align-items-start mb-4">
-                        <i class="bi bi-person-lock text-primary fs-4 me-3"></i>
-                        <div>
-                            <h6 class="fw-semibold mb-1">Account Security</h6>
-                            <p class="text-muted small mb-0">
-                                Manage account status and secure password setup.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="d-flex align-items-start">
-                        <i class="bi bi-journal-text text-warning fs-4 me-3"></i>
-                        <div>
-                            <h6 class="fw-semibold mb-1">Audit Logs</h6>
-                            <p class="text-muted small mb-0">
-                                Review recorded administrative actions.
-                            </p>
-                            <a asp-controller="AuditLogs"
-                               asp-action="Index"
-                               class="small">
-                                View audit logs
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
+</section>
 
-    <!-- Recent Activity -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-0 pt-4 px-4">
-            <h5 class="fw-bold mb-1">Recent Activity</h5>
-            <p class="text-muted small mb-0">
-                Latest administrative actions and system events.
+<!-- Call to Action -->
+<section class="py-5">
+    <div class="container py-4">
+        <div class="bg-success text-white rounded-4 p-4 p-lg-5 text-center">
+            <i class="bi bi-heart-pulse fs-1"></i>
+            <h2 class="fw-bold mt-3">Make Your Health a Priority</h2>
+            <p class="mb-4">
+                Start organising your fitness and wellbeing journey today.
             </p>
-        </div>
 
-        <div class="card-body p-4">
-            @if (ViewBag.RecentLogs != null && ((List<HealthTrack.Models.AuditLog>)ViewBag.RecentLogs).Count > 0)
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover table-sm mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Timestamp</th>
-                                <th>Action</th>
-                                <th>Details</th>
-                                <th>Performed By</th>
-                                <th>IP Address</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var log in (List<HealthTrack.Models.AuditLog>)ViewBag.RecentLogs)
-                            {
-                                <tr>
-                                    <td><small>@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</small></td>
-                                    <td>
-                                        @switch (log.Action)
-                                        {
-                                            case "UserCreate":
-                                                <span class="badge bg-success">User Create</span>
-                                                break;
-                                            case "UserEdit":
-                                                <span class="badge bg-info">User Edit</span>
-                                                break;
-                                            case "UserDelete":
-                                                <span class="badge bg-danger">User Delete</span>
-                                                break;
-                                            case "RoleCreate":
-                                                <span class="badge bg-success">Role Create</span>
-                                                break;
-                                            case "SettingsEdit":
-                                                <span class="badge bg-secondary">Settings</span>
-                                                break;
-                                            default:
-                                                <span class="badge bg-secondary">@log.Action</span>
-                                                break;
-                                        }
-                                    </td>
-                                    <td><small>@log.Details</small></td>
-                                    <td><small>@log.PerformedBy</small></td>
-                                    <td><small>@log.IPAddress</small></td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                <div class="text-center py-4">
-                    <i class="bi bi-clock-history fs-1 text-muted"></i>
-                    <p class="text-muted mt-3 mb-0">
-                        No activity recorded yet.
-                    </p>
-                </div>
-            }
+            <a asp-controller="Account"
+               asp-action="Register"
+               class="btn btn-light btn-lg text-success fw-semibold px-4">
+                Join HealthTrack
+                <i class="bi bi-arrow-right ms-2"></i>
+            </a>
         </div>
     </div>
-
-</div>
+</section>

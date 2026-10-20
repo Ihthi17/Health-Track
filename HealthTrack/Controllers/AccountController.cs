@@ -665,12 +665,14 @@ namespace HealthTrack.Controllers
                 var userEmail = User?.FindFirst(ClaimTypes.Email)?.Value ?? "Unknown";
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 _logger.LogInformation($"User logged out: {userEmail}");
-                return RedirectToAction(nameof(Login), "Account");
+                // Redirect to home page (http://localhost:5293)
+                return Redirect("/");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during logout");
-                return RedirectToAction(nameof(Login), "Account");
+                // Redirect to home page even on error
+                return Redirect("/");
             }
         }
 
