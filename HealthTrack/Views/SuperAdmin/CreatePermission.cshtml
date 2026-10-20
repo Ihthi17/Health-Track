@@ -1,0 +1,38 @@
+@model HealthTrack.Models.Permission
+
+@{
+    ViewData["Title"] = "Create New Permission";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="permission-form">
+    <div class="card" style="max-width: 600px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Create New Permission</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/superadmin/permissions/create">
+                <div class="mb-3">
+                    <label for="PermissionName" class="form-label">Permission Name *</label>
+                    <input type="text" class="form-control" id="PermissionName" name="PermissionName" value="@Model?.PermissionName" required>
+                    <small class="form-text text-muted">e.g., user.create, user.edit, report.view</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="Description" class="form-label">Description</label>
+                    <textarea class="form-control" id="Description" name="Description" rows="4">@Model?.Description</textarea>
+                    <small class="form-text text-muted">What this permission allows</small>
+                </div>
+
+                <div class="form-group" style="margin-top: 30px; display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Create Permission
+                    </button>
+                    <a href="/superadmin/permissions" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

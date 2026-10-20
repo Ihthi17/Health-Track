@@ -1,0 +1,88 @@
+@model HealthTrack.Models.User
+
+@{
+    ViewData["Title"] = "Edit User";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="user-form">
+    <div class="card" style="max-width: 600px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Edit User: @Model?.Email</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/superadmin/users/edit/@Model?.UserID">
+                <input type="hidden" name="UserID" value="@Model?.UserID">
+
+                <div class="mb-3">
+                    <label for="Email" class="form-label">Email Address *</label>
+                    <input type="email" class="form-control" id="Email" name="Email" value="@Model?.Email" required>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="FirstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="FirstName" name="FirstName" value="@Model?.FirstName">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="LastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="LastName" name="LastName" value="@Model?.LastName">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="RoleID" class="form-label">Role *</label>
+                            <select class="form-select" id="RoleID" name="RoleID" required>
+                                <option value="">-- Select Role --</option>
+                                @if (ViewBag.Roles != null)
+                                {
+                                    foreach (var role in ViewBag.Roles)
+                                    {
+                                        if (Model?.RoleID == role.RoleID)
+                                        {
+                                            <option value="@role.RoleID" selected>@role.RoleName</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@role.RoleID">@role.RoleName</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="IsActive" class="form-label">Status</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="IsActive" name="IsActive" 
+                                       @(Model?.IsActive == true ? "checked" : "")>
+                                <label class="form-check-label" for="IsActive">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Note:</strong> Password cannot be changed from this interface. Users must use "Forgot Password" to reset.
+                </div>
+
+                <div class="form-group" style="margin-top: 30px; display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update User
+                    </button>
+                    <a href="/superadmin/users" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

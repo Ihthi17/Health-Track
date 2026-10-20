@@ -1,0 +1,61 @@
+@model IEnumerable<HealthTrack.Models.Permission>
+
+@{
+    ViewData["Title"] = "Permission Management";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="permissions-management">
+    <div class="mb-4">
+        <a href="/superadmin/permissions/create" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create New Permission
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">System Permissions</h5>
+        </div>
+        <div class="card-body">
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Permission Name</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var permission in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@permission.PermissionName</strong>
+                                    </td>
+                                    <td>@(permission.Description ?? "-")</td>
+                                    <td>
+                                        <form method="post" action="/superadmin/permissions/delete/@permission.PermissionID" style="display:inline;"
+                                              onsubmit="return confirm('Are you sure you want to delete this permission?');">
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No permissions found.
+                </div>
+            }
+        </div>
+    </div>
+</div>

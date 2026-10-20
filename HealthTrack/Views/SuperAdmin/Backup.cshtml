@@ -1,0 +1,198 @@
+@model IEnumerable<HealthTrack.Models.BackupLog>
+
+@{
+    ViewData["Title"] = "Backup & Restore";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="backup-management">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-download"></i> Create Backup</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Create a new backup of the database.</p>
+                    <form method="post" action="/superadmin/backup/create" onsubmit="return confirm('Create a new database backup?');">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-save"></i> Create Backup Now
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-cogs"></i> Backup Information</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>Database:</strong> HealthTrackDB</li>
+                        <li><strong>Server:</strong> .\SQLEXPRESS</li>
+                        <li><strong>Backup Location:</strong> ./Backups/</li>
+                        <li><strong>Auto-Backup:</strong> Dynamic (set below)</li>
+                        <li><strong>Type:</strong> Full Database Backup</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature A: Dynamic Backup Schedule Settings -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Auto-Backup Schedule (Feature A)</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="/superadmin/backup/settings">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="autoBackupEnabled" name="autoBackupEnabled" value="true">
+                                    <label class="form-check-label" for="autoBackupEnabled">
+                                        <strong>Enable Auto-Backup</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="backupTime" class="form-label">Backup Time</label>
+                                <input type="time" class="form-control" id="backupTime" name="backupTime" value="02:00">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="backupFrequency" class="form-label">Frequency</label>
+                                <select class="form-control" id="backupFrequency" name="backupFrequency">
+                                    <option value="Daily">Daily</option>
+                                    <option value="Weekly">Weekly</option>
+                                    <option value="Monthly">Monthly</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="backupDayOfWeek" class="form-label">Day (for Weekly)</label>
+                                <select class="form-control" id="backupDayOfWeek" name="backupDayOfWeek">
+                                    <option value="">Select Day</option>
+                                    <option value="0">Sunday</option>
+                                    <option value="1">Monday</option>
+                                    <option value="2">Tuesday</option>
+                                    <option value="3">Wednesday</option>
+                                    <option value="4">Thursday</option>
+                                    <option value="5">Friday</option>
+                                    <option value="6">Saturday</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save"></i> Save Schedule Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Backup History</h5>
+        </div>
+        <div class="card-body">
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Backup Date</th>
+                                <th>Filename</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Size</th>
+                                <th>Restored</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var backup in Model)
+                            {
+                                <tr>
+                                    <td>@backup.BackupDate.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                    <td><small><code>@backup.BackupFileName</code></small></td>
+                                    <td><span class="badge bg-secondary">@backup.BackupType</span></td>
+                                    <td>
+                                        @if (backup.Status == "Success")
+                                        {
+                                            <span class="badge bg-success">Success</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">@backup.Status</span>
+                                        }
+                                    </td>
+                                    <td>@FormatBytes(backup.Size)</td>
+                                    <td>
+                                        @if (backup.RestoredDate.HasValue)
+                                        {
+                                            <small>@backup.RestoredDate.Value.ToString("yyyy-MM-dd HH:mm:ss")</small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">Never</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="/superadmin/backup/download/@backup.BackupLogID" class="btn btn-sm btn-info" title="Download backup file">
+                                                <i class="fas fa-cloud-download-alt"></i> Download
+                                            </a>
+                                            <form method="post" action="/superadmin/backup/restore/@backup.BackupLogID" style="display:inline;"
+                                                  onsubmit="return confirm('CAUTION: This will restore the database. This operation cannot be undone. Continue?');">
+                                                <button type="submit" class="btn btn-sm btn-warning" @(backup.Status != "Success" ? "disabled" : "") title="Restore from this backup">
+                                                    <i class="fas fa-undo"></i> Restore
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No backups found. Create your first backup by clicking the button above.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    string FormatBytes(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-reset the Enable Auto-Backup toggle to OFF after page load
+    const autoBackupToggle = document.getElementById('autoBackupEnabled');
+    if (autoBackupToggle) {
+        autoBackupToggle.checked = false;
+    }
+});
+</script>

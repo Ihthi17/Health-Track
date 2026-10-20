@@ -1,0 +1,676 @@
+@using Microsoft.AspNetCore.Identity
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    /* Hide default navbar for SuperAdmin pages */
+    .navbar, footer {
+        display: none;
+    }
+
+    /* SuperAdmin Layout Styles */
+    body.superadmin-layout {
+        display: flex;
+        margin: 0;
+        padding: 0;
+    }
+
+    .superadmin-container {
+        display: flex;
+        width: 100%;
+        min-height: 100vh;
+    }
+
+    .superadmin-sidebar {
+        width: 250px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px 0;
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        left: 0;
+        z-index: 999;
+    }
+
+    .superadmin-sidebar.collapsed {
+        width: 0;
+        left: -250px;
+    }
+
+    .superadmin-sidebar .sidebar-header {
+        padding: 20px;
+        border-bottom: 2px solid rgba(255,255,255,0.2);
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .superadmin-sidebar .sidebar-header h4 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .superadmin-sidebar .sidebar-header p {
+        margin: 5px 0 0 0;
+        font-size: 12px;
+        opacity: 0.8;
+    }
+
+    .sidebar-toggle {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 20px;
+        display: none;
+    }
+
+    .superadmin-sidebar .nav-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .superadmin-sidebar .nav-menu li {
+        margin: 0;
+        padding: 0;
+    }
+
+    .superadmin-sidebar .nav-menu a {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        color: rgba(255,255,255,0.9);
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+    }
+
+    .superadmin-sidebar .nav-menu a:hover {
+        background-color: rgba(255,255,255,0.1);
+        border-left-color: #fff;
+        color: white;
+    }
+
+    .superadmin-sidebar .nav-menu a.active {
+        background-color: rgba(255,255,255,0.2);
+        border-left-color: #fff;
+        color: white;
+        font-weight: bold;
+    }
+
+    .superadmin-sidebar .nav-menu i {
+        margin-right: 10px;
+        width: 20px;
+        text-align: center;
+    }
+
+    .superadmin-sidebar .menu-section {
+        margin-top: 20px;
+    }
+
+    .superadmin-sidebar .menu-section-title {
+        padding: 10px 20px;
+        font-size: 12px;
+        font-weight: bold;
+        color: rgba(255,255,255,0.6);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .superadmin-content {
+        margin-left: 250px;
+        padding: 30px;
+        flex: 1;
+        background-color: #f5f5f5;
+        transition: all 0.3s ease;
+    }
+
+    .superadmin-content.full-width {
+        margin-left: 0;
+    }
+
+    .superadmin-header {
+        background: white;
+        padding: 20px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        margin: -30px -30px 30px -30px;
+        margin-bottom: 30px;
+        border-radius: 5px 5px 0 0;
+    }
+
+    .superadmin-header-left {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .superadmin-header h1 {
+        margin: 0;
+        font-size: 28px;
+        color: #333;
+    }
+
+    .toggle-sidebar-btn {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #667eea;
+        padding: 8px;
+        display: none;
+        transition: color 0.3s ease;
+    }
+
+    .toggle-sidebar-btn:hover {
+        color: #5568d3;
+    }
+
+    .superadmin-header .user-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .user-menu {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+    }
+
+    .user-menu-dropdown {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 40px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        min-width: 200px;
+        z-index: 1000;
+    }
+
+    .user-menu-dropdown.show {
+        display: block;
+    }
+
+    .user-menu-dropdown a {
+        display: block;
+        padding: 12px 20px;
+        color: #333;
+        text-decoration: none;
+        border-bottom: 1px solid #eee;
+        transition: all 0.3s ease;
+    }
+
+    .user-menu-dropdown a:last-child {
+        border-bottom: none;
+    }
+
+    .user-menu-dropdown a:hover {
+        background-color: #f5f5f5;
+        color: #667eea;
+    }
+
+    .user-menu-dropdown a.logout {
+        color: #dc3545;
+    }
+
+    .user-menu-dropdown a.logout:hover {
+        background-color: #fff5f5;
+    }
+
+    .user-menu-dropdown-btn {
+        display: block;
+        padding: 12px 20px;
+        color: #333;
+        text-decoration: none;
+        border-bottom: 1px solid #eee;
+        transition: all 0.3s ease;
+    }
+
+    .user-menu-dropdown-btn:hover {
+        background-color: #f5f5f5;
+        color: #667eea;
+    }
+
+    .user-menu-dropdown-btn.logout {
+        color: #dc3545;
+    }
+
+    .user-menu-dropdown-btn.logout:hover {
+        background-color: #fff5f5;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .superadmin-sidebar {
+            width: 250px;
+            position: fixed;
+            left: -250px;
+        }
+
+        .superadmin-sidebar.active {
+            left: 0;
+        }
+
+        .superadmin-content {
+            margin-left: 0;
+        }
+
+        .toggle-sidebar-btn {
+            display: block;
+        }
+
+        .superadmin-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .superadmin-header h1 {
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+    }
+
+    /* Scrollbar styling for sidebar */
+    .superadmin-sidebar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .superadmin-sidebar::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.1);
+    }
+
+    .superadmin-sidebar::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.3);
+        border-radius: 3px;
+    }
+
+    .superadmin-sidebar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,0.5);
+    }
+
+    /* Notification Bell Styles */
+    .notification-bell-wrapper {
+        position: relative;
+    }
+
+    .notification-bell {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #667eea;
+        cursor: pointer;
+        padding: 0;
+        position: relative;
+        transition: color 0.3s ease;
+    }
+
+    .notification-bell:hover {
+        color: #5568d3;
+    }
+
+    .notification-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background-color: #dc3545;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .notification-dropdown {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 40px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        width: 350px;
+        max-height: 400px;
+        z-index: 1000;
+        overflow-y: auto;
+    }
+
+    .notification-dropdown.show {
+        display: block;
+    }
+
+    .notification-dropdown-header {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #f8f9fa;
+    }
+
+    .notification-dropdown-header h6 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .notification-dropdown-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .notification-item-dropdown {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .notification-item-dropdown:hover {
+        background-color: #f8f9fa;
+    }
+
+    .notification-item-dropdown.unread {
+        background-color: #e3f2fd;
+    }
+
+    .notification-item-dropdown .notification-time {
+        font-size: 11px;
+        color: #999;
+    }
+
+    .notification-item-dropdown .notification-title {
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 4px;
+    }
+
+    .notification-item-dropdown .notification-message {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 4px;
+    }
+</style>
+
+<body class="superadmin-layout">
+    <div class="superadmin-container">
+        <!-- Sidebar Navigation -->
+        <nav class="superadmin-sidebar" id="superadminSidebar">
+            <div class="sidebar-header">
+                <div>
+                    <h4>HealthTrack Admin</h4>
+                    <p>Control Panel</p>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">×</button>
+            </div>
+
+            <ul class="nav-menu">
+                <li><a href="/superadmin" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a></li>
+
+                <li class="menu-section">
+                    <div class="menu-section-title">Management</div>
+                </li>
+
+                <li><a href="/superadmin/users" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "Users" ? "active" : "")">
+                    <i class="fas fa-users"></i>
+                    <span>Users</span>
+                </a></li>
+
+                <li><a href="/superadmin/roles" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "Roles" ? "active" : "")">
+                    <i class="fas fa-user-tag"></i>
+                    <span>Roles</span>
+                </a></li>
+
+                <li><a href="/superadmin/permissions" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "Permissions" ? "active" : "")">
+                    <i class="fas fa-lock"></i>
+                    <span>Permissions</span>
+                </a></li>
+
+                <li><a href="/superadmin/appointments" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "Appointments" ? "active" : "")">
+                    <i class="fas fa-calendar"></i>
+                    <span>Appointments</span>
+                </a></li>
+
+                <li class="menu-section">
+                    <div class="menu-section-title">System</div>
+                </li>
+
+                <li><a href="/superadmin/settings" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "Settings" ? "active" : "")">
+                    <i class="fas fa-cog"></i>
+                    <span>General Settings</span>
+                </a></li>
+
+                <li><a href="/superadmin/settings/email" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "EmailSettings" ? "active" : "")">
+                    <i class="fas fa-envelope"></i>
+                    <span>Email Settings</span>
+                </a></li>
+
+                <li><a href="/superadmin/audit-logs" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "AuditLogs" ? "active" : "")">
+                    <i class="fas fa-history"></i>
+                    <span>Audit Logs</span>
+                </a></li>
+
+                <li><a href="/superadmin/backup" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "Backup" ? "active" : "")">
+                    <i class="fas fa-database"></i>
+                    <span>Backup & Restore</span>
+                </a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <div class="superadmin-content" id="superadminContent">
+            <div class="superadmin-header">
+                <div class="superadmin-header-left">
+                    <button class="toggle-sidebar-btn" id="toggleSidebarBtn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1>@ViewData["Title"]</h1>
+                </div>
+                <div class="user-info">
+                    <!-- Notifications Bell -->
+                    <div class="notification-bell-wrapper" id="notificationBellWrapper">
+                        <button class="notification-bell" id="notificationBell" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                        </button>
+                        <div class="notification-dropdown" id="notificationDropdown">
+                            <div class="notification-dropdown-header">
+                                <h6>Notifications</h6>
+                                <button class="btn-clear" id="markAllReadBtn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px;">Mark all as read</button>
+                            </div>
+                            <div class="notification-dropdown-list" id="notificationList">
+                                <p class="text-muted text-center small">Loading notifications...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-menu" id="userMenu">
+                        <span><i class="fas fa-user-circle" style="font-size: 24px; color: #667eea;"></i></span>
+                        <span>@User.Identity?.Name</span>
+                        <i class="fas fa-chevron-down" style="font-size: 12px;"></i>
+                        
+                        <div class="user-menu-dropdown" id="userMenuDropdown">
+                            <a href="/superadmin/profile"><i class="fas fa-user"></i> My Profile</a>
+                            <a href="/superadmin/profile/edit"><i class="fas fa-edit"></i> Edit Profile</a>
+                            <a href="/superadmin/profile/change-password"><i class="fas fa-key"></i> Change Password</a>
+                            <form id="logoutForm" action="/Account/Logout" method="post" style="display:inline;">
+                                <button type="submit" class="user-menu-dropdown-btn logout" style="width: 100%; text-align: left; border: none; background: none; cursor: pointer;">
+                                    <i class="fas fa-sign-out-alt"></i> Logout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert Messages -->
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Main Content -->
+            @RenderBody()
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script>
+        // Sidebar toggle functionality
+        const toggleBtn = document.getElementById('toggleSidebarBtn');
+        const sidebar = document.getElementById('superadminSidebar');
+        const content = document.getElementById('superadminContent');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('active');
+            content.classList.toggle('full-width');
+        }
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', toggleSidebar);
+        }
+
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', toggleSidebar);
+        }
+
+        // User menu dropdown
+        const userMenu = document.getElementById('userMenu');
+        const dropdown = document.getElementById('userMenuDropdown');
+
+        if (userMenu) {
+            userMenu.addEventListener('click', function(e) {
+                if (e.target.closest('.user-menu-dropdown')) return;
+                dropdown.classList.toggle('show');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!userMenu.contains(e.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        }
+
+        // Notification Bell Functionality
+        const notificationBell = document.getElementById('notificationBell');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        const notificationBadge = document.getElementById('notificationBadge');
+        const notificationList = document.getElementById('notificationList');
+        const markAllReadBtn = document.getElementById('markAllReadBtn');
+
+        if (notificationBell) {
+            notificationBell.addEventListener('click', function(e) {
+                e.stopPropagation();
+                notificationDropdown.classList.toggle('show');
+                if (notificationDropdown.classList.contains('show')) {
+                    loadNotifications();
+                }
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!document.getElementById('notificationBellWrapper').contains(e.target)) {
+                notificationDropdown.classList.remove('show');
+            }
+        });
+
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/superadmin/api/notifications');
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const { notifications, unreadCount } = data;
+
+                // Update badge
+                if (unreadCount > 0) {
+                    notificationBadge.textContent = unreadCount;
+                    notificationBadge.style.display = 'flex';
+                } else {
+                    notificationBadge.style.display = 'none';
+                }
+
+                // Update list
+                if (notifications && notifications.length > 0) {
+                    notificationList.innerHTML = notifications.map(n => `
+                        <div class="notification-item-dropdown ${!n.isRead ? 'unread' : ''}" onclick="markNotificationAsRead(${n.notificationID})">
+                            <div class="notification-title">${n.title}</div>
+                            <div class="notification-message">${n.message}</div>
+                            <div class="notification-time">${new Date(n.createdAt).toLocaleString()}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    notificationList.innerHTML = '<p class="text-muted text-center small" style="padding: 20px;">No notifications</p>';
+                }
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+                notificationList.innerHTML = '<p class="text-danger text-center small" style="padding: 20px;">Error loading notifications</p>';
+            }
+        }
+
+        async function markNotificationAsRead(notificationId) {
+            try {
+                await fetch(`/superadmin/api/notifications/${notificationId}/read`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                loadNotifications();
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+            }
+        }
+
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                try {
+                    await fetch('/superadmin/api/notifications/mark-all-read', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    loadNotifications();
+                } catch (error) {
+                    console.error('Error marking all as read:', error);
+                }
+            });
+        }
+
+        // Load notifications on page load
+        window.addEventListener('load', loadNotifications);
+    </script>
+</body>

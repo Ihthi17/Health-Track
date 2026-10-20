@@ -1,0 +1,12 @@
+@{
+    ViewData["Title"] = "Session expired";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+}
+
+<div class="text-center">
+    <h4>Session expired</h4>
+    <p class="text-muted">Your session has timed out. Please sign in again to continue.</p>
+    <div class="d-grid">
+        <a asp-action="Login" class="btn btn-accent">Sign in</a>
+    </div>
+</div>

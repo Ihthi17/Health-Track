@@ -1,0 +1,155 @@
+@model HealthTrack.Models.Appointment
+
+@{
+    ViewData["Title"] = "Edit Appointment";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="edit-appointment-container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Edit Appointment</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="/superadmin/appointments/edit/@Model.AppointmentID">
+                        @if (ViewData.ModelState.Values.SelectMany(v => v.Errors).Count() > 0)
+                        {
+                            <div class="alert alert-danger">
+                                <strong>Please fix the following errors:</strong>
+                                <ul>
+                                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                    {
+                                        <li>@error.ErrorMessage</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                        <input type="hidden" name="AppointmentID" value="@Model.AppointmentID" />
+
+                        <div class="mb-3">
+                            <label for="ClientID" class="form-label">Client *</label>
+                            <select class="form-select" id="ClientID" name="ClientID" required>
+                                @{
+                                    var clients = (ViewBag.Clients ?? new List<HealthTrack.Models.ClientProfile>()) as IEnumerable<HealthTrack.Models.ClientProfile>;
+                                }
+                                @if (clients != null)
+                                {
+                                    @foreach (var client in clients)
+                                    {
+                                        if (client.ClientProfileID == Model.ClientID)
+                                        {
+                                            <option value="@client.ClientProfileID" selected>Client #@client.ClientProfileID</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@client.ClientProfileID">Client #@client.ClientProfileID</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="TrainerID" class="form-label">Trainer (Optional)</label>
+                            <select class="form-select" id="TrainerID" name="TrainerID">
+                                <option value="">Select a trainer...</option>
+                                @{
+                                    var trainers = (ViewBag.Trainers ?? new List<HealthTrack.Models.TrainerProfile>()) as IEnumerable<HealthTrack.Models.TrainerProfile>;
+                                }
+                                @if (trainers != null)
+                                {
+                                    @foreach (var trainer in trainers)
+                                    {
+                                        if (trainer.TrainerProfileID == Model.TrainerID)
+                                        {
+                                            <option value="@trainer.TrainerProfileID" selected>Trainer #@trainer.TrainerProfileID</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@trainer.TrainerProfileID">Trainer #@trainer.TrainerProfileID</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="StartTime" class="form-label">Start Date & Time *</label>
+                            <input type="datetime-local" class="form-control" id="StartTime" name="StartTime" value="@Model.StartTime.ToString("yyyy-MM-ddTHH:mm")" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="EndTime" class="form-label">End Date & Time *</label>
+                            <input type="datetime-local" class="form-control" id="EndTime" name="EndTime" value="@Model.EndTime.ToString("yyyy-MM-ddTHH:mm")" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="Status" class="form-label">Status</label>
+                            <select class="form-select" id="Status" name="Status">
+                                <option value="Pending">Pending</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Rejected">Rejected</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                        <script>document.getElementById('Status').value = '@Model.Status';</script>
+
+                        <div class="mb-3">
+                            <label for="Reason" class="form-label">Reason/Notes</label>
+                            <textarea class="form-control" id="Reason" name="Reason" rows="3">@Model.Reason</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="TrainerNotes" class="form-label">Trainer Notes</label>
+                            <textarea class="form-control" id="TrainerNotes" name="TrainerNotes" rows="3">@Model.TrainerNotes</textarea>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Appointment
+                            </button>
+                            <a href="/superadmin/appointments" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Appointment Info</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Created:</strong><br/>
+                        <small class="text-muted">@Model.CreatedAt.ToString("MMMM dd, yyyy hh:mm tt")</small>
+                    </div>
+                    <hr />
+                    <strong>Status:</strong><br/>
+                    @if (Model.Status == "Pending")
+                    {
+                        <span class="badge bg-warning">Pending</span>
+                    }
+                    else if (Model.Status == "Approved")
+                    {
+                        <span class="badge bg-success">Approved</span>
+                    }
+                    else if (Model.Status == "Rejected")
+                    {
+                        <span class="badge bg-danger">Rejected</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">@Model.Status</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

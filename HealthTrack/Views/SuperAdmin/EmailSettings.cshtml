@@ -1,0 +1,109 @@
+@model HealthTrack.Models.EmailSettings
+
+@{
+    ViewData["Title"] = "Email Settings";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="email-settings-form">
+    <div class="card" style="max-width: 800px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Email Configuration (SMTP)</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/superadmin/settings/email">
+                @if (Model?.EmailSettingsID > 0)
+                {
+                    <input type="hidden" name="EmailSettingsID" value="@Model.EmailSettingsID">
+                }
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Note:</strong> Email settings are required for password reset notifications and system emails.
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="SMTPServer" class="form-label">SMTP Server *</label>
+                            <input type="text" class="form-control" id="SMTPServer" name="SMTPServer" 
+                                   value="@Model?.SMTPServer" placeholder="smtp.gmail.com" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="SMTPPort" class="form-label">SMTP Port *</label>
+                            <input type="number" class="form-control" id="SMTPPort" name="SMTPPort" 
+                                   value="@(Model?.SMTPPort ?? 587)" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="SMTPUsername" class="form-label">SMTP Username</label>
+                            <input type="text" class="form-control" id="SMTPUsername" name="SMTPUsername" 
+                                   value="@Model?.SMTPUsername" placeholder="your-email@gmail.com">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="SMTPPassword" class="form-label">SMTP Password</label>
+                            <input type="password" class="form-control" id="SMTPPassword" name="SMTPPassword" 
+                                   value="@Model?.SMTPPassword" placeholder="app-password-or-password">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="FromEmail" class="form-label">From Email Address *</label>
+                            <input type="email" class="form-control" id="FromEmail" name="FromEmail" 
+                                   value="@Model?.FromEmail" placeholder="noreply@healthtrack.com" required>
+                            <small class="form-text text-muted">Email address that will appear in sent emails</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="FromName" class="form-label">From Name</label>
+                            <input type="text" class="form-control" id="FromName" name="FromName" 
+                                   value="@Model?.FromName" placeholder="HealthTrack Support">
+                            <small class="form-text text-muted">Sender name in emails</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="EnableSSL" class="form-label">Security</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="EnableSSL" name="EnableSSL" 
+                               @(Model?.EnableSSL == true ? "checked" : "")>
+                        <label class="form-check-label" for="EnableSSL">Enable SSL/TLS</label>
+                    </div>
+                    <small class="form-text text-muted">Use SSL/TLS for secure connection (recommended)</small>
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Important Setup Instructions:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>For Gmail: Enable 2FA and generate an App Password</li>
+                        <li>For Office 365: Use your full email and password</li>
+                        <li>For custom SMTP: Use port 587 with STARTTLS or 465 with SSL</li>
+                    </ul>
+                </div>
+
+                <div class="form-group" style="margin-top: 30px; display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Email Settings
+                    </button>
+                    <a href="/superadmin" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

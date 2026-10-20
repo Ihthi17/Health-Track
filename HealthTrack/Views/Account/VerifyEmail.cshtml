@@ -1,0 +1,25 @@
+@model HealthTrack.Models.VerifyEmailViewModel
+@{
+    ViewData["Title"] = "Email verification";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+}
+
+<div class="mb-3 text-center">
+    <h4>Email verification</h4>
+    <p class="text-muted small">Confirm your email address to complete account setup.</p>
+</div>
+
+@if (Model?.IsVerified == true)
+{
+    <div class="alert alert-success">Your email has been verified. You may now <a asp-action="Login">sign in</a>.</div>
+}
+else
+{
+    <div class="alert alert-warning">Email verification is pending. Use the resend option or contact support.</div>
+    <div class="d-grid mb-2">
+        <button class="btn btn-outline-primary" disabled>Resend verification</button>
+    </div>
+    <div class="text-center small">
+        <a asp-action="Login">Return to sign in</a>
+    </div>
+}

@@ -1,0 +1,70 @@
+@model HealthTrack.Models.SystemSettings
+
+@{
+    ViewData["Title"] = "General Settings";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="settings-form">
+    <div class="card" style="max-width: 700px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">General System Settings</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/superadmin/settings" enctype="multipart/form-data">
+                @if (Model?.SystemSettingsID > 0)
+                {
+                    <input type="hidden" name="SystemSettingsID" value="@Model.SystemSettingsID">
+                }
+
+                <div class="mb-3">
+                    <label for="SystemName" class="form-label">System Name *</label>
+                    <input type="text" class="form-control" id="SystemName" name="SystemName" 
+                           value="@Model?.SystemName" placeholder="e.g., HealthTrack" required>
+                    <small class="form-text text-muted">Appears in application header and emails</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="LogoFile" class="form-label">System Logo</label>
+                    @if (!string.IsNullOrEmpty(Model?.SystemLogo))
+                    {
+                        <div class="mb-2">
+                            <strong>Current Logo:</strong>
+                            <div style="margin: 10px 0;">
+                                <img src="@Model.SystemLogo" alt="System Logo" style="max-height: 100px; max-width: 200px; border: 1px solid #ddd; padding: 5px;">
+                            </div>
+                        </div>
+                    }
+                    <input type="file" class="form-control" id="LogoFile" name="LogoFile" accept="image/png,image/jpeg,image/jpg,image/webp">
+                    <small class="form-text text-muted">Supported formats: PNG, JPG, JPEG, WebP. Max size: 2 MB</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="MaintenanceMode" class="form-label">Maintenance Mode</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="MaintenanceMode" name="MaintenanceMode" 
+                               @(Model?.MaintenanceMode == true ? "checked" : "")>
+                        <label class="form-check-label" for="MaintenanceMode">Enable Maintenance Mode</label>
+                    </div>
+                    <small class="form-text text-muted">When enabled, only SuperAdmin can access the system</small>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Email Settings:</strong> <a href="/superadmin/settings/email">Click here</a> to configure SMTP settings for sending emails.
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Backup Settings:</strong> <a href="/superadmin/backup">Click here</a> to configure and manage system backups.
+                </div>
+
+                <div class="form-group" style="margin-top: 30px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

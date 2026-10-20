@@ -1,0 +1,86 @@
+@model HealthTrack.Models.Appointment
+
+@{
+    ViewData["Title"] = "Create Appointment";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="create-appointment-container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Create New Appointment</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="/superadmin/appointments/create">
+                        @if (ViewData.ModelState.Values.SelectMany(v => v.Errors).Count() > 0)
+                        {
+                            <div class="alert alert-danger">
+                                <strong>Please fix the following errors:</strong>
+                                <ul>
+                                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                    {
+                                        <li>@error.ErrorMessage</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label for="ClientID" class="form-label">Client *</label>
+                            <select class="form-select" id="ClientID" name="ClientID" required>
+                                <option value="">Select a client...</option>
+                                @foreach (var client in (ViewBag.Clients ?? new List<HealthTrack.Models.ClientProfile>()))
+                                {
+                                    var clientName = client.User != null 
+                                        ? $"{client.User.FirstName} {client.User.LastName}".Trim() 
+                                        : "Unknown";
+                                    <option value="@client.UserID">@clientName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="TrainerID" class="form-label">Trainer *</label>
+                            <select class="form-select" id="TrainerID" name="TrainerID" required>
+                                <option value="">Select a trainer...</option>
+                                @foreach (var trainer in (ViewBag.Trainers ?? new List<HealthTrack.Models.TrainerProfile>()))
+                                {
+                                    var trainerName = trainer.User != null 
+                                        ? $"{trainer.User.FirstName} {trainer.User.LastName}".Trim() 
+                                        : "Unknown";
+                                    <option value="@trainer.UserID">@trainerName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="StartTime" class="form-label">Start Date & Time *</label>
+                            <input type="datetime-local" class="form-control" id="StartTime" name="StartTime" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="EndTime" class="form-label">End Date & Time *</label>
+                            <input type="datetime-local" class="form-control" id="EndTime" name="EndTime" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="Reason" class="form-label">Reason/Notes</label>
+                            <textarea class="form-control" id="Reason" name="Reason" rows="3" placeholder="Enter appointment reason or notes..."></textarea>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Create Appointment
+                            </button>
+                            <a href="/superadmin/appointments" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,107 @@
+@model IEnumerable<HealthTrack.Models.Appointment>
+
+@{
+    ViewData["Title"] = "Appointments";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="appointments-container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <a href="/superadmin/appointments/create" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Appointment
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">All Appointments</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model != null && Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Client</th>
+                                        <th>Trainer</th>
+                                        <th>Status</th>
+                                        <th>Reason</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var appointment in Model)
+                                    {
+                                        <tr>
+                                            <td>@appointment.StartTime.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                            <td>@appointment.EndTime.ToString("hh:mm tt")</td>
+                                            <td>Client #@appointment.ClientID</td>
+                                            <td>@(appointment.TrainerID > 0 ? $"Trainer #{appointment.TrainerID}" : "—")</td>
+                                            <td>
+                                                @if (appointment.Status == "Pending")
+                                                {
+                                                    <span class="badge bg-warning">Pending</span>
+                                                }
+                                                else if (appointment.Status == "Approved")
+                                                {
+                                                    <span class="badge bg-success">Approved</span>
+                                                }
+                                                else if (appointment.Status == "Rejected")
+                                                {
+                                                    <span class="badge bg-danger">Rejected</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">@appointment.Status</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <small>@(string.IsNullOrEmpty(appointment.Reason) ? "—" : appointment.Reason)</small>
+                                            </td>
+                                            <td>
+                                                <a href="/superadmin/appointments/edit/@appointment.AppointmentID" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                @if (appointment.Status == "Pending")
+                                                {
+                                                    <form method="post" action="/superadmin/appointments/approve/@appointment.AppointmentID" style="display: inline;">
+                                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Approve">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-4 text-center">
+                            <p class="text-muted">No appointments found.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .appointments-container {
+        padding: 20px 0;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+</style>

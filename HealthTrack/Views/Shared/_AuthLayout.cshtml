@@ -1,0 +1,35 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - HealthTrack</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+</head>
+<body class="auth-bg">
+    <div class="auth-container d-flex align-items-center justify-content-center">
+        <div class="auth-card card shadow-sm">
+            <div class="card-body">
+                <div class="auth-brand text-center mb-3">
+                    <a asp-controller="Home" asp-action="Index" class="text-decoration-none">
+                        <h3 class="mb-0">HealthTrack</h3>
+                    </a>
+                </div>
+                @RenderBody()
+            </div>
+            <div class="card-footer text-center bg-transparent border-0 small">
+                <span>&copy; @DateTime.Now.Year HealthTrack</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

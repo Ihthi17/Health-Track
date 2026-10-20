@@ -1,0 +1,63 @@
+@model HealthTrack.Models.Role
+
+@{
+    ViewData["Title"] = "Create New Role";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="role-form">
+    <div class="card" style="max-width: 900px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Create New Role</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/superadmin/roles/create">
+                <div class="mb-3">
+                    <label for="RoleName" class="form-label">Role Name *</label>
+                    <input type="text" class="form-control" id="RoleName" name="RoleName" value="@Model?.RoleName" required>
+                    <small class="form-text text-muted">e.g., Trainer, Client, Manager</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="Description" class="form-label">Description</label>
+                    <textarea class="form-control" id="Description" name="Description" rows="4">@Model?.Description</textarea>
+                    <small class="form-text text-muted">Brief description of this role's purpose</small>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Permissions</label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                        @if (ViewBag.AllPermissions != null)
+                        {
+                            foreach (var perm in ViewBag.AllPermissions)
+                            {
+                                <div style="padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9;">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" 
+                                               value="@perm.PermissionID" id="perm_@perm.PermissionID">
+                                        <label class="form-check-label" for="perm_@perm.PermissionID">
+                                            <strong>@perm.PermissionName</strong>
+                                            @if (!string.IsNullOrEmpty(perm.Description))
+                                            {
+                                                <br><small class="text-muted">@perm.Description</small>
+                                            }
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 30px; display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Create Role
+                    </button>
+                    <a href="/superadmin/roles" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
