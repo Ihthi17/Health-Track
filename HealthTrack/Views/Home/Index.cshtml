@@ -1,236 +1,477 @@
 ﻿@{
-    ViewData["Title"] = "HealthTrack | Your Health, Your Journey";
+    ViewData["Title"] = "HealthTrack | Professional Health & Fitness Management";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+<style>
+    :root {
+        --primary-dark: #123B4A;
+        --accent-teal: #16A6A1;
+        --bg-light: #F3F7F8;
+        --text-dark: #2D3E47;
+        --text-muted: #6B7F89;
+        --border-light: #E0EBF0;
+        --white: #FFFFFF;
+    }
+
+    body {
+        background-color: var(--bg-light);
+        color: var(--text-dark);
+    }
+
+    /* Hero Section */
+    .hero-section {
+        background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(18, 59, 74, 0.95) 100%);
+        color: var(--white);
+        padding: 80px 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(22, 166, 161, 0.15) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-badge {
+        display: inline-block;
+        background: rgba(22, 166, 161, 0.2);
+        color: var(--accent-teal);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(22, 166, 161, 0.3);
+    }
+
+    .hero-title {
+        font-size: 3rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 20px;
+        letter-spacing: -0.5px;
+    }
+
+    .hero-title .accent {
+        color: var(--accent-teal);
+    }
+
+    .hero-subtitle {
+        font-size: 1.15rem;
+        line-height: 1.6;
+        opacity: 0.95;
+        margin-bottom: 30px;
+        max-width: 500px;
+    }
+
+    .btn-primary-hero {
+        background-color: var(--accent-teal);
+        color: var(--white);
+        border: none;
+        padding: 12px 32px;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn-primary-hero:hover {
+        background-color: #1a9692;
+        color: var(--white);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(22, 166, 161, 0.3);
+    }
+
+    .btn-secondary-hero {
+        background-color: transparent;
+        color: var(--white);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 10px 30px;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn-secondary-hero:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: var(--white);
+        color: var(--white);
+    }
+
+    .hero-image {
+        max-width: 100%;
+        height: auto;
+        border-radius: 12px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Features Section */
+    .features-section {
+        padding: 80px 0;
+        background-color: var(--white);
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 60px;
+    }
+
+    .section-label {
+        display: inline-block;
+        color: var(--accent-teal);
+        font-weight: 700;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+    }
+
+    .section-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        margin-bottom: 15px;
+    }
+
+    .section-subtitle {
+        font-size: 1rem;
+        color: var(--text-muted);
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .feature-card {
+        background: var(--white);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 32px;
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .feature-card:hover {
+        border-color: var(--accent-teal);
+        box-shadow: 0 12px 32px rgba(18, 59, 74, 0.08);
+        transform: translateY(-4px);
+    }
+
+    .feature-icon {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, var(--accent-teal) 0%, rgba(22, 166, 161, 0.8) 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: var(--white);
+        margin-bottom: 20px;
+    }
+
+    .feature-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        margin-bottom: 12px;
+    }
+
+    .feature-description {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        line-height: 1.6;
+        flex-grow: 1;
+    }
+
+    /* Process Section */
+    .process-section {
+        padding: 80px 0;
+        background-color: var(--bg-light);
+    }
+
+    .process-card {
+        background: var(--white);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 40px 30px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .process-card:hover {
+        border-color: var(--accent-teal);
+        box-shadow: 0 12px 32px rgba(18, 59, 74, 0.08);
+    }
+
+    .process-number {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(18, 59, 74, 0.8) 100%);
+        color: var(--white);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.5rem;
+        margin: 0 auto 20px;
+    }
+
+    .process-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        margin-bottom: 12px;
+    }
+
+    .process-description {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    /* CTA Section */
+    .cta-section {
+        padding: 80px 0;
+        background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(18, 59, 74, 0.95) 100%);
+        color: var(--white);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .cta-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(22, 166, 161, 0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .cta-content {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+    }
+
+    .cta-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+    }
+
+    .cta-subtitle {
+        font-size: 1.05rem;
+        opacity: 0.95;
+        margin-bottom: 30px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+        display: flex;
+        gap: 40px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 40px;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--accent-teal);
+        display: block;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        margin-top: 4px;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .hero-title {
+            font-size: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+        }
+
+        .cta-title {
+            font-size: 1.6rem;
+        }
+
+        .hero-section {
+            padding: 50px 0;
+        }
+
+        .features-section,
+        .process-section,
+        .cta-section {
+            padding: 50px 0;
+        }
+
+        .stats-bar {
+            gap: 20px;
+        }
+    }
+</style>
+
 <!-- Hero Section -->
-<section class="py-5 bg-light w-100">
-    <div class="container-fluid py-lg-5 px-0">
-        <div class="row align-items-center g-0">
-            <div class="col-lg-6 px-4 px-lg-5">
-                <span class="badge rounded-pill bg-success-subtle text-success px-3 py-2 mb-3">
-                    YOUR PERSONAL HEALTH COMPANION
-                </span>
-
-                <h1 class="display-4 fw-bold mb-4">
-                    Build a <span class="text-success">Healthier You</span>,
-                    One Day at a Time.
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-6 hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-heartbeat me-2"></i> Your Health Companion
+                </div>
+                
+                <h1 class="hero-title">
+                    Manage Your Health<br><span class="accent">Effortlessly</span>
                 </h1>
-
-                <p class="lead text-secondary mb-4">
-                    Track your fitness, manage appointments, follow personalised
-                    workout plans, and take control of your wellbeing with HealthTrack.
+                
+                <p class="hero-subtitle">
+                    A comprehensive platform to track fitness, manage appointments, follow personalized workout and diet plans, and take control of your wellness journey.
                 </p>
 
                 <div class="d-flex flex-wrap gap-3">
-                    <a asp-controller="Account"
-                       asp-action="Register"
-                       class="btn btn-success btn-lg px-4">
+                    <a asp-controller="Account" asp-action="Register" class="btn-primary-hero">
                         Get Started
-                        <i class="bi bi-arrow-right ms-2"></i>
+                        <i class="fas fa-arrow-right"></i>
                     </a>
-
-                    <a asp-controller="Account"
-                       asp-action="Login"
-                       class="btn btn-outline-success btn-lg px-4">
+                    <a asp-controller="Account" asp-action="Login" class="btn-secondary-hero">
                         Sign In
                     </a>
                 </div>
-
-                <div class="d-flex flex-wrap gap-4 mt-4">
-                    <div>
-                        <h5 class="fw-bold mb-1">
-                            <i class="bi bi-heart-pulse text-success me-2"></i>
-                            Health
-                        </h5>
-                        <small class="text-muted">Monitor your wellbeing</small>
-                    </div>
-
-                    <div>
-                        <h5 class="fw-bold mb-1">
-                            <i class="bi bi-activity text-success me-2"></i>
-                            Fitness
-                        </h5>
-                        <small class="text-muted">Track your progress</small>
-                    </div>
-                </div>
             </div>
 
-            <div class="col-lg-6 px-0">
-                <div class="position-relative w-100 h-100" style="min-height: 500px;">
-                    <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1200&q=85"
-                         alt="Person exercising to improve fitness"
-                         class="img-fluid w-100 h-100"
-                         style="object-fit: cover; object-position: center;"
-                         loading="eager" />
-
-                    <div class="position-absolute bottom-0 start-0 m-3 p-3 bg-white rounded-3 shadow-sm">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="bg-success-subtle text-success rounded-circle p-3">
-                                <i class="bi bi-graph-up-arrow fs-4"></i>
-                            </div>
-                            <div>
-                                <h6 class="fw-bold mb-1">Your Progress Matters</h6>
-                                <small class="text-muted">Every healthy choice counts.</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-6">
+                <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=600&q=85"
+                     alt="Fitness and wellness tracking"
+                     class="hero-image"
+                     loading="lazy" />
             </div>
         </div>
     </div>
 </section>
 
 <!-- Features Section -->
-<section class="py-5">
-    <div class="container py-4">
-        <div class="text-center mb-5">
-            <span class="text-success fw-semibold">WHAT YOU CAN DO</span>
-            <h2 class="fw-bold mt-2">Everything You Need for Better Health</h2>
-            <p class="text-muted mx-auto" style="max-width: 650px;">
-                Manage your fitness journey in one place with tools designed
-                to help you stay consistent and motivated.
+<section class="features-section">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-label">
+                <i class="fas fa-check-circle me-2"></i> Core Features
+            </div>
+            <h2 class="section-title">Everything You Need</h2>
+            <p class="section-subtitle">
+                Comprehensive tools designed to streamline your fitness management and health tracking.
             </p>
         </div>
 
         <div class="row g-4">
             <div class="col-md-6 col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-body p-4">
-                        <div class="bg-success-subtle text-success rounded-3 p-3 d-inline-block mb-3">
-                            <i class="bi bi-calendar2-check fs-3"></i>
-                        </div>
-                        <h5 class="fw-bold">Appointment Management</h5>
-                        <p class="text-muted mb-0">
-                            Schedule appointments with trainers and keep
-                            track of your upcoming sessions.
-                        </p>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-calendar-alt"></i>
                     </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-body p-4">
-                        <div class="bg-primary-subtle text-primary rounded-3 p-3 d-inline-block mb-3">
-                            <i class="bi bi-person-arms-up fs-3"></i>
-                        </div>
-                        <h5 class="fw-bold">Workout Plans</h5>
-                        <p class="text-muted mb-0">
-                            Follow structured exercise plans and record
-                            your daily workout activities.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-body p-4">
-                        <div class="bg-warning-subtle text-warning rounded-3 p-3 d-inline-block mb-3">
-                            <i class="bi bi-egg-fried fs-3"></i>
-                        </div>
-                        <h5 class="fw-bold">Nutrition & Diet</h5>
-                        <p class="text-muted mb-0">
-                            Organise your diet plans and develop healthier
-                            eating habits.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-body p-4">
-                        <div class="bg-info-subtle text-info rounded-3 p-3 d-inline-block mb-3">
-                            <i class="bi bi-heart-pulse fs-3"></i>
-                        </div>
-                        <h5 class="fw-bold">Health Tracking</h5>
-                        <p class="text-muted mb-0">
-                            Record health measurements and review your
-                            progress over time.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-body p-4">
-                        <div class="bg-danger-subtle text-danger rounded-3 p-3 d-inline-block mb-3">
-                            <i class="bi bi-bell fs-3"></i>
-                        </div>
-                        <h5 class="fw-bold">Reminders & Notifications</h5>
-                        <p class="text-muted mb-0">
-                            Stay informed about appointments, workout
-                            sessions, and important activities.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-body p-4">
-                        <div class="bg-secondary-subtle text-secondary rounded-3 p-3 d-inline-block mb-3">
-                            <i class="bi bi-graph-up fs-3"></i>
-                        </div>
-                        <h5 class="fw-bold">Progress Reports</h5>
-                        <p class="text-muted mb-0">
-                            Review your recorded activities and understand
-                            how your fitness routine develops.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- How It Works -->
-<section class="py-5 bg-light">
-    <div class="container py-4">
-        <div class="text-center mb-5">
-            <span class="text-success fw-semibold">GET STARTED</span>
-            <h2 class="fw-bold mt-2">Your Health Journey Starts Here</h2>
-        </div>
-
-        <div class="row g-4 text-center">
-            <div class="col-md-4">
-                <div class="bg-white rounded-4 p-4 h-100 shadow-sm">
-                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-3"
-                         style="width: 60px; height: 60px;">
-                        <span class="fs-4 fw-bold">1</span>
-                    </div>
-                    <h5 class="fw-bold">Create Your Account</h5>
-                    <p class="text-muted mb-0">
-                        Register and create your personal HealthTrack profile.
+                    <h3 class="feature-title">Appointments</h3>
+                    <p class="feature-description">
+                        Schedule and manage trainer sessions. Track upcoming appointments and receive timely reminders.
                     </p>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <div class="bg-white rounded-4 p-4 h-100 shadow-sm">
-                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-3"
-                         style="width: 60px; height: 60px;">
-                        <span class="fs-4 fw-bold">2</span>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-dumbbell"></i>
                     </div>
-                    <h5 class="fw-bold">Set Your Goals</h5>
-                    <p class="text-muted mb-0">
-                        Organise your workouts, diet plans, and appointments.
+                    <h3 class="feature-title">Workout Plans</h3>
+                    <p class="feature-description">
+                        Access structured exercise programs tailored to your goals. Track your workouts and progress.
                     </p>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <div class="bg-white rounded-4 p-4 h-100 shadow-sm">
-                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-3"
-                         style="width: 60px; height: 60px;">
-                        <span class="fs-4 fw-bold">3</span>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-leaf"></i>
                     </div>
-                    <h5 class="fw-bold">Track Your Progress</h5>
-                    <p class="text-muted mb-0">
-                        Record activities and work consistently towards your goals.
+                    <h3 class="feature-title">Nutrition Plans</h3>
+                    <p class="feature-description">
+                        Create and manage personalized diet plans. Build healthy eating habits with expert guidance.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="feature-title">Progress Tracking</h3>
+                    <p class="feature-description">
+                        Monitor your health metrics and fitness achievements. Visualize your improvement over time.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3 class="feature-title">Health Metrics</h3>
+                    <p class="feature-description">
+                        Track vital signs and health measurements. Maintain comprehensive health records in one place.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3 class="feature-title">Smart Reminders</h3>
+                    <p class="feature-description">
+                        Never miss an appointment or workout. Receive notifications for important health activities.
                     </p>
                 </div>
             </div>
@@ -238,22 +479,81 @@
     </div>
 </section>
 
-<!-- Call to Action -->
-<section class="py-5">
-    <div class="container py-4">
-        <div class="bg-success text-white rounded-4 p-4 p-lg-5 text-center">
-            <i class="bi bi-heart-pulse fs-1"></i>
-            <h2 class="fw-bold mt-3">Make Your Health a Priority</h2>
-            <p class="mb-4">
-                Start organising your fitness and wellbeing journey today.
+<!-- How It Works Section -->
+<section class="process-section">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-label">
+                <i class="fas fa-lightbulb me-2"></i> Getting Started
+            </div>
+            <h2 class="section-title">Simple Three-Step Process</h2>
+            <p class="section-subtitle">
+                Start your wellness journey in just a few minutes. Sign up, set your goals, and begin tracking.
             </p>
+        </div>
 
-            <a asp-controller="Account"
-               asp-action="Register"
-               class="btn btn-light btn-lg text-success fw-semibold px-4">
-                Join HealthTrack
-                <i class="bi bi-arrow-right ms-2"></i>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="process-card">
+                    <div class="process-number">1</div>
+                    <h3 class="process-title">Create Account</h3>
+                    <p class="process-description">
+                        Sign up and build your personalized profile. Set your health goals and preferences.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="process-card">
+                    <div class="process-number">2</div>
+                    <h3 class="process-title">Setup Plans</h3>
+                    <p class="process-description">
+                        Customize workout plans, diet preferences, and schedule appointments with professionals.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="process-card">
+                    <div class="process-number">3</div>
+                    <h3 class="process-title">Track Progress</h3>
+                    <p class="process-description">
+                        Log activities, monitor metrics, and watch your progress unfold with detailed analytics.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action Section -->
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-content">
+            <h2 class="cta-title">Ready to Transform Your Health?</h2>
+            <p class="cta-subtitle">
+                Join thousands of users taking control of their fitness and wellness journey with HealthTrack.
+            </p>
+            
+            <a asp-controller="Account" asp-action="Register" class="btn-primary-hero" style="background-color: var(--accent-teal); margin-top: 10px;">
+                Start Your Journey
+                <i class="fas fa-arrow-right"></i>
             </a>
+
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <span class="stat-value">10K+</span>
+                    <span class="stat-label">Active Users</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">500+</span>
+                    <span class="stat-label">Trainers</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">50K+</span>
+                    <span class="stat-label">Workouts Tracked</span>
+                </div>
+            </div>
         </div>
     </div>
 </section>

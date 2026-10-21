@@ -1,0 +1,352 @@
+@model ActivationSecurityViewModel
+
+@{
+    ViewData["Title"] = "Activation & Security Management";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<!-- <div class="superadmin-header">
+    <h2>Activation & Security Management</h2>
+    <p class="text-muted">Monitor account activations, security events, and account status</p>
+</div> -->
+
+<div class="container-fluid mt-4">
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-warning text-uppercase mb-1 small font-weight-bold">Pending Activations</div>
+                    <div class="h3 mb-0">@Model.TotalPendingActivations</div>
+                    <small class="text-danger">@Model.TotalExpiredTokens expired</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-success text-uppercase mb-1 small font-weight-bold">Active Accounts</div>
+                    <div class="h3 mb-0">@Model.TotalActiveAccounts</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-danger text-uppercase mb-1 small font-weight-bold">Locked Accounts</div>
+                    <div class="h3 mb-0">@Model.TotalLockedAccounts</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-info text-uppercase mb-1 small font-weight-bold">Failed Login Attempts</div>
+                    <div class="h3 mb-0">@Model.TotalFailedAttemptsThisPeriod</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs for Different Sections -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                <i class="fas fa-hourglass-half me-2"></i> Pending Activations
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="accounts-tab" data-bs-toggle="tab" data-bs-target="#accounts" type="button" role="tab">
+                <i class="fas fa-user-check me-2"></i> Account Status
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="failed-tab" data-bs-toggle="tab" data-bs-target="#failed" type="button" role="tab">
+                <i class="fas fa-exclamation-triangle me-2"></i> Failed Logins
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit" type="button" role="tab">
+                <i class="fas fa-shield-alt me-2"></i> Security Audit
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Pending Activations Tab -->
+        <div class="tab-pane fade show active" id="pending" role="tabpanel">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">Pending Account Activations (@Model.PendingActivations.Count)</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.PendingActivations.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                        <th>Registered</th>
+                                        <th>Token Expires</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var activation in Model.PendingActivations)
+                                    {
+                                        var isExpired = activation.IsExpired || activation.TokenExpiryDate <= DateTime.UtcNow;
+                                        <tr class="@(isExpired ? "table-danger" : "")">
+                                            <td><strong>@activation.Email</strong></td>
+                                            <td>@activation.FirstName @activation.LastName</td>
+                                            <td><span class="badge bg-primary">@activation.Role</span></td>
+                                            <td>@activation.RegistrationDate.ToString("MMM dd, yyyy")</td>
+                                            <td>
+                                                @if (isExpired)
+                                                {
+                                                    <span class="badge bg-danger">Expired @activation.TokenExpiryDate.ToString("MMM dd")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning text-dark">@activation.TokenExpiryDate.ToString("MMM dd, HH:mm")</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <form method="post" action="/superadmin/activation-security/renew-token/@activation.ActivationTokenId" style="display:inline;">
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Renew Token">
+                                                        <i class="fas fa-redo"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-success mb-0">
+                            <i class="fas fa-check-circle me-2"></i> All accounts activated!
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Status Tab -->
+        <div class="tab-pane fade" id="accounts" role="tabpanel">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">Account Status Overview (@Model.AccountStatus.Count)</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.AccountStatus.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                        <th>Last Login</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var account in Model.AccountStatus.Take(20))
+                                    {
+                                        <tr class="@(account.IsLocked ? "table-danger" : "")">
+                                            <td><strong>@account.Email</strong></td>
+                                            <td>@account.FirstName @account.LastName</td>
+                                            <td><span class="badge bg-primary">@account.Role</span></td>
+                                            <td>
+                                                @if (account.IsLocked)
+                                                {
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-lock me-1"></i> Locked
+                                                    </span>
+                                                }
+                                                else if (account.IsActive)
+                                                {
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check-circle me-1"></i> Active
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">
+                                                        <i class="fas fa-times-circle me-1"></i> Inactive
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (account.LastLoginAt.HasValue)
+                                                {
+                                                    <small>@account.LastLoginAt.Value.ToString("MMM dd, HH:mm")</small>
+                                                }
+                                                else
+                                                {
+                                                    <small class="text-muted">Never</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (account.IsLocked)
+                                                {
+                                                    <form method="post" action="/superadmin/activation-security/unlock-account/@account.UserId" style="display:inline;">
+                                                        <button type="submit" class="btn btn-sm btn-warning" title="Unlock Account">
+                                                            <i class="fas fa-unlock"></i> Unlock
+                                                        </button>
+                                                    </form>
+                                                }
+                                                <form method="post" action="/superadmin/activation-security/toggle-account-status/@account.UserId" style="display:inline;">
+                                                    <button type="submit" class="btn btn-sm @(account.IsActive ? "btn-outline-danger" : "btn-outline-success")" title="@(account.IsActive ? "Deactivate" : "Activate")">
+                                                        <i class="fas fa-@(account.IsActive ? "ban" : "check")"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mb-0">No accounts found.</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Failed Logins Tab -->
+        <div class="tab-pane fade" id="failed" role="tabpanel">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">Failed Login Attempts (@Model.FailedLoginAttempts.Count)</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.FailedLoginAttempts.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Name</th>
+                                        <th>Failed Attempts</th>
+                                        <th>Last Attempt</th>
+                                        <th>Account Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var failed in Model.FailedLoginAttempts)
+                                    {
+                                        <tr class="@(failed.IsCurrentlyLocked ? "table-danger" : "table-warning")">
+                                            <td><strong>@failed.Email</strong></td>
+                                            <td>@failed.FirstName @failed.LastName</td>
+                                            <td>
+                                                <span class="badge bg-danger">@failed.FailedAttempts attempts</span>
+                                            </td>
+                                            <td>@failed.LastFailedAttempt.ToString("MMM dd, HH:mm")</td>
+                                            <td>
+                                                @if (failed.IsCurrentlyLocked)
+                                                {
+                                                    <span class="badge bg-danger">
+                                                        Locked until @failed.LockoutEnd?.ToString("MMM dd, HH:mm")
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning">At risk</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-success mb-0">
+                            <i class="fas fa-check-circle me-2"></i> No failed login attempts.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Audit Tab -->
+        <div class="tab-pane fade" id="audit" role="tabpanel">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">Security Audit Events (@Model.SecurityAuditEvents.Count)</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.SecurityAuditEvents.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Action</th>
+                                        <th>Severity</th>
+                                        <th>Details</th>
+                                        <th>Performed By</th>
+                                        <th>Date & Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var audit in Model.SecurityAuditEvents.Take(20))
+                                    {
+                                        var severityBadge = audit.Severity switch {
+                                            "Critical" => "bg-danger",
+                                            "Warning" => "bg-warning text-dark",
+                                            "Error" => "bg-danger",
+                                            _ => "bg-info"
+                                        };
+                                        <tr>
+                                            <td><strong>@audit.Action</strong></td>
+                                            <td><span class="badge @severityBadge">@audit.Severity</span></td>
+                                            <td><small>@(string.IsNullOrEmpty(audit.Details) ? "-" : audit.Details)</small></td>
+                                            <td>@audit.PerformedBy</td>
+                                            <td>@audit.CreatedAt.ToString("MMM dd, HH:mm")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mb-0">No security events recorded.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-teal { background-color: #123B4A !important; }
+    .bg-accent { background-color: #16A6A1 !important; }
+    .btn-teal { background-color: #123B4A; border-color: #123B4A; color: white; }
+    .btn-teal:hover { background-color: #0d2835; border-color: #0d2835; color: white; }
+    .border-left-warning { border-left: 0.25rem solid #ffc107 !important; }
+    .border-left-success { border-left: 0.25rem solid #16A6A1 !important; }
+    .border-left-danger { border-left: 0.25rem solid #dc3545 !important; }
+    .border-left-info { border-left: 0.25rem solid #123B4A !important; }
+    .text-warning { color: #ffc107 !important; }
+    .text-success { color: #16A6A1 !important; }
+    .text-danger { color: #dc3545 !important; }
+    .text-info { color: #123B4A !important; }
+    .bg-warning { background-color: #ffc107 !important; }
+    .bg-success { background-color: #16A6A1 !important; }
+    .bg-danger { background-color: #dc3545 !important; }
+    .bg-info { background-color: #123B4A !important; }
+</style>

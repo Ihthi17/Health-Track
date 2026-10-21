@@ -18,17 +18,20 @@ namespace HealthTrack.Controllers
         private readonly ILogger<SuperAdminController> _logger;
         private readonly IBackupService _backupService;
         private readonly IConfiguration _configuration;
+        private readonly SystemSettingsService _settingsService;
 
         public SuperAdminController(
             HealthTrackContext context, 
             ILogger<SuperAdminController> logger,
             IBackupService backupService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            SystemSettingsService settingsService)
         {
             _context = context;
             _logger = logger;
             _backupService = backupService;
             _configuration = configuration;
+            _settingsService = settingsService;
         }
 
         #region Helper Methods
@@ -832,11 +835,26 @@ namespace HealthTrack.Controllers
         [HttpGet("settings")]
         public async Task<IActionResult> Settings()
         {
-            var settings = await _context.SystemSettings.FirstOrDefaultAsync();
+            // Clear any cached settings
+            _settingsService.ClearCache();
+
+            var systemSettings = await _context.SystemSettings.FirstOrDefaultAsync() ?? new SystemSettings();
+            
+            // Populate the NotMapped properties from the settings service
+            systemSettings.SystemName = await _settingsService.GetSystemNameAsync();
+            systemSettings.SystemLogo = await _settingsService.GetSystemLogoAsync();
+            systemSettings.MaintenanceMode = await _settingsService.GetMaintenanceModeAsync();
+            
             var emailSettings = await _context.EmailSettings.FirstOrDefaultAsync();
 
             ViewBag.EmailSettings = emailSettings;
-            return View(settings ?? new SystemSettings());
+            
+            // Add no-cache headers to prevent browser caching
+            Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
+            
+            return View(systemSettings);
         }
 
         [HttpPost("settings")]
@@ -876,6 +894,9 @@ namespace HealthTrack.Controllers
                         return View(s ?? new SystemSettings());
                     }
 
+                    // GET OLD LOGO PATH BEFORE SAVING NEW ONE
+                    var oldLogo = await _settingsService.GetSystemLogoAsync();
+
                     // Create upload directory if it doesn't exist
                     var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "logos");
                     Directory.CreateDirectory(uploadDir);
@@ -884,54 +905,51 @@ namespace HealthTrack.Controllers
                     var fileName = $"logo_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid():N}{fileExtension}";
                     var filePath = Path.Combine(uploadDir, fileName);
 
-                    // Save file
+                    // Save file to disk
                     using (var stream = System.IO.File.Create(filePath))
                     {
                         await LogoFile.CopyToAsync(stream);
                     }
 
-                    // Store relative path
-                    settings.SystemLogo = $"/uploads/logos/{fileName}";
+                    // Verify file was saved
+                    if (!System.IO.File.Exists(filePath))
+                    {
+                        ModelState.AddModelError("LogoFile", "Failed to save logo file");
+                        return View(settings);
+                    }
+
+                    // Store relative path using settings service
+                    var logoPath = $"/uploads/logos/{fileName}";
+                    await _settingsService.SetSystemLogoAsync(logoPath);
 
                     // Delete old logo if it exists and is an uploaded file
-                    if (existing?.SystemLogo != null && existing.SystemLogo.StartsWith("/uploads/logos/"))
+                    if (oldLogo != null && oldLogo.StartsWith("/uploads/logos/"))
                     {
-                        var oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", existing.SystemLogo.TrimStart('/'));
+                        var oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", oldLogo.TrimStart('/'));
                         if (System.IO.File.Exists(oldPath))
                         {
                             try
                             {
                                 System.IO.File.Delete(oldPath);
+                                _logger.LogInformation("Deleted old logo file: {0}", oldPath);
                             }
-                            catch
+                            catch (Exception ex)
                             {
-                                // Log error but don't fail the operation
-                                _logger.LogWarning("Could not delete old logo file: {0}", oldPath);
+                                _logger.LogWarning(ex, "Could not delete old logo file: {0}", oldPath);
                             }
                         }
                     }
                 }
-                else if (existing != null && !string.IsNullOrEmpty(existing.SystemLogo))
+
+                // Update system name using settings service
+                if (!string.IsNullOrWhiteSpace(settings.SystemName))
                 {
-                    // Preserve existing logo if no new file is uploaded
-                    settings.SystemLogo = existing.SystemLogo;
+                    await _settingsService.SetSystemNameAsync(settings.SystemName);
                 }
 
-                if (existing == null)
-                {
-                    settings.CreatedAt = DateTime.UtcNow;
-                    _context.SystemSettings.Add(settings);
-                }
-                else
-                {
-                    existing.SystemName = settings.SystemName;
-                    existing.SystemLogo = settings.SystemLogo;
-                    existing.MaintenanceMode = settings.MaintenanceMode;
-                    existing.UpdatedAt = DateTime.UtcNow;
-                    _context.SystemSettings.Update(existing);
-                }
+                // Update maintenance mode using settings service
+                await _settingsService.SetMaintenanceModeAsync(settings.MaintenanceMode);
 
-                await _context.SaveChangesAsync();
                 await LogAudit("Updated system settings", "SettingsEdit", "SystemSettings");
                 TempData["SuccessMessage"] = "System settings updated successfully.";
                 return RedirectToAction("Settings");
@@ -1550,10 +1568,50 @@ namespace HealthTrack.Controllers
         [HttpGet("backup")]
         public async Task<IActionResult> Backup()
         {
-            var backupLogs = await _context.BackupLogs
-                .OrderByDescending(b => b.BackupDate)
-                .ToListAsync();
-            return View(backupLogs);
+            try
+            {
+                var backupLogs = await _context.BackupLogs
+                    .OrderByDescending(b => b.BackupDate)
+                    .ToListAsync();
+
+                // Get current backup settings from SystemSettings using the service
+                var autoBackupEnabled = await _settingsService.GetMaintenanceModeAsync(); // Temporary use
+                var backupTimeStr = await _settingsService.GetSettingAsync("BackupTime");
+                var backupFrequency = await _settingsService.GetSettingAsync("BackupFrequency") ?? "Daily";
+                var backupDayOfWeekStr = await _settingsService.GetSettingAsync("BackupDayOfWeek");
+
+                // Parse backup time
+                var backupTime = "02:00"; // Default
+                if (!string.IsNullOrEmpty(backupTimeStr))
+                {
+                    // If stored as TimeSpan string like "02:00:00"
+                    if (TimeSpan.TryParse(backupTimeStr, out var ts))
+                    {
+                        backupTime = ts.ToString(@"hh\:mm");
+                    }
+                    else
+                    {
+                        backupTime = backupTimeStr;
+                    }
+                }
+
+                // Get auto-backup enabled setting
+                var autoBackupEnabledStr = await _settingsService.GetSettingAsync("AutoBackupEnabled");
+                autoBackupEnabled = autoBackupEnabledStr == "true" || autoBackupEnabledStr == "1";
+
+                ViewBag.AutoBackupEnabled = autoBackupEnabled;
+                ViewBag.BackupTime = backupTime;
+                ViewBag.BackupFrequency = backupFrequency;
+                ViewBag.BackupDayOfWeek = backupDayOfWeekStr ?? "";
+
+                return View(backupLogs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading backup page");
+                TempData["ErrorMessage"] = "Error loading backup settings: " + ex.Message;
+                return View(new List<BackupLog>());
+            }
         }
 
         [HttpPost("backup/create")]
@@ -1656,34 +1714,35 @@ namespace HealthTrack.Controllers
         {
             try
             {
-                var settings = await _context.SystemSettings.FirstOrDefaultAsync();
-                if (settings == null)
+                // Save AutoBackupEnabled setting
+                await _settingsService.SetSettingAsync("AutoBackupEnabled", autoBackupEnabled ? "true" : "false", "Enable/Disable automatic backups");
+
+                // Save BackupTime setting
+                if (!string.IsNullOrEmpty(backupTime))
                 {
-                    settings = new SystemSettings();
-                    _context.SystemSettings.Add(settings);
+                    await _settingsService.SetSettingAsync("BackupTime", backupTime, "Time to run automatic backups (HH:mm format)");
                 }
 
-                settings.AutoBackupEnabled = autoBackupEnabled;
-                
-                // Parse time (HH:mm format expected)
-                if (!string.IsNullOrEmpty(backupTime) && TimeSpan.TryParse(backupTime, out var time))
+                // Save BackupFrequency setting
+                await _settingsService.SetSettingAsync("BackupFrequency", backupFrequency ?? "Daily", "Frequency of automatic backups (Daily, Weekly, Monthly)");
+
+                // Save BackupDayOfWeek setting (for weekly backups)
+                if (backupDayOfWeek.HasValue)
                 {
-                    settings.BackupTime = time;
+                    await _settingsService.SetSettingAsync("BackupDayOfWeek", backupDayOfWeek.ToString(), "Day of week for weekly backups (0=Sunday, 6=Saturday)");
                 }
-
-                settings.BackupFrequency = backupFrequency ?? "Daily";
-                settings.BackupDayOfWeek = backupDayOfWeek;
-                settings.UpdatedAt = DateTime.UtcNow;
-
-                await _context.SaveChangesAsync();
+                else
+                {
+                    await _settingsService.SetSettingAsync("BackupDayOfWeek", "", "Day of week for weekly backups");
+                }
 
                 await LogAudit(
-                    $"Updated backup schedule: Enabled={autoBackupEnabled}, Time={backupTime}, Frequency={backupFrequency}",
+                    $"Updated backup schedule: Enabled={autoBackupEnabled}, Time={backupTime}, Frequency={backupFrequency}, DayOfWeek={backupDayOfWeek}",
                     "BackupSettingsSave",
                     "Backup Settings"
                 );
 
-                TempData["SuccessMessage"] = "Backup schedule settings saved successfully.";
+                TempData["SuccessMessage"] = "Backup schedule settings saved successfully. Auto-Backup is now " + (autoBackupEnabled ? "ENABLED" : "DISABLED") + ".";
                 return RedirectToAction("Backup");
             }
             catch (Exception ex)
@@ -1880,6 +1939,620 @@ namespace HealthTrack.Controllers
             {
                 return Json(new { error = ex.Message, stackTrace = ex.StackTrace });
             }
+        }
+
+        #endregion
+
+        #region Trainer Assignments Management
+
+        [HttpGet("trainer-assignments")]
+        public async Task<IActionResult> TrainerAssignments()
+        {
+            try
+            {
+                var trainerRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Trainer");
+                var clientRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Client");
+
+                if (trainerRole == null || clientRole == null)
+                    return BadRequest("Trainer or Client role not found");
+
+                // Get active trainers and clients
+                var trainers = await _context.TrainerProfiles
+                    .Include(t => t.User)
+                    .Where(t => t.User != null && t.User.IsActive && t.User.RoleID == trainerRole.RoleID)
+                    .ToListAsync();
+
+                var clients = await _context.ClientProfiles
+                    .Include(c => c.User)
+                    .Where(c => c.User != null && c.User.IsActive && c.User.RoleID == clientRole.RoleID)
+                    .ToListAsync();
+
+                // Get current assignments (for now, this is simulated - you'd need a TrainerClientAssignment table)
+                var assignments = new List<TrainerAssignmentViewModel>();
+
+                var viewModel = new ManageAssignmentsViewModel
+                {
+                    AvailableTrainers = trainers,
+                    AvailableClients = clients,
+                    CurrentAssignments = assignments,
+                    TotalActiveAssignments = assignments.Count
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading trainer assignments");
+                TempData["ErrorMessage"] = "Error loading trainer assignments: " + ex.Message;
+                return RedirectToAction("Index");
+            }
+        }
+
+        [HttpPost("trainer-assignments/assign")]
+        public async Task<IActionResult> AssignTrainer(int trainerId, int clientId)
+        {
+            try
+            {
+                // Validate trainer exists
+                var trainer = await _context.TrainerProfiles.FindAsync(trainerId);
+                if (trainer == null)
+                    return BadRequest("Trainer not found");
+
+                // Validate client exists
+                var client = await _context.ClientProfiles.FindAsync(clientId);
+                if (client == null)
+                    return BadRequest("Client not found");
+
+                // TODO: Create assignment record in database
+                // For now, we'll just log this action
+                await LogAudit($"Assigned trainer {trainerId} to client {clientId}", "TrainerAssignment", $"Trainer:{trainerId},Client:{clientId}");
+
+                TempData["SuccessMessage"] = "Trainer assigned to client successfully.";
+                return RedirectToAction("TrainerAssignments");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error assigning trainer");
+                TempData["ErrorMessage"] = "Error assigning trainer: " + ex.Message;
+                return RedirectToAction("TrainerAssignments");
+            }
+        }
+
+        #endregion
+
+        #region Reports and Analytics
+
+        [HttpGet("reports")]
+        public async Task<IActionResult> Reports(DateTime? startDate, DateTime? endDate, int page = 1)
+        {
+            try
+            {
+                var actualStartDate = startDate ?? DateTime.UtcNow.AddMonths(-1);
+                var actualEndDate = endDate ?? DateTime.UtcNow;
+
+                var clientRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Client");
+                var trainerRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Trainer");
+
+                // User registrations
+                var newUsers = await _context.Users
+                    .Where(u => u.CreatedAt >= actualStartDate && u.CreatedAt <= actualEndDate)
+                    .ToListAsync();
+
+                var newClients = newUsers.Where(u => u.RoleID == clientRole?.RoleID).ToList();
+                var newTrainers = newUsers.Where(u => u.RoleID == trainerRole?.RoleID).ToList();
+
+                // User registration details
+                var userRegDetails = newUsers.Select(u => new UserRegistrationRecord
+                {
+                    UserId = u.UserID,
+                    Email = u.Email,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Role = u.Role?.RoleName ?? "Unknown",
+                    CreatedAt = u.CreatedAt,
+                    IsActive = u.IsActive
+                }).ToList();
+
+                // Appointment statistics
+                var appointmentsThisPeriod = await _context.Appointments
+                    .Where(a => a.CreatedAt >= actualStartDate && a.CreatedAt <= actualEndDate)
+                    .Include(a => a.Client)
+                    .Include(a => a.Trainer)
+                    .ToListAsync();
+
+                var completedAppointments = appointmentsThisPeriod.Count(a => a.Status == "Completed");
+                var cancelledAppointments = appointmentsThisPeriod.Count(a => a.Status == "Cancelled");
+                var pendingAppointments = appointmentsThisPeriod.Count(a => a.Status == "Pending");
+                var approvedAppointments = appointmentsThisPeriod.Count(a => a.Status == "Approved");
+
+                var appointmentDetails = appointmentsThisPeriod.Select(a => new AppointmentDetailRecord
+                {
+                    AppointmentId = a.AppointmentID,
+                    ClientName = a.Client?.User != null ? $"{a.Client.User.FirstName} {a.Client.User.LastName}".Trim() : "Unknown",
+                    TrainerName = a.Trainer?.User != null ? $"{a.Trainer.User.FirstName} {a.Trainer.User.LastName}".Trim() : "Unknown",
+                    StartTime = a.StartTime,
+                    EndTime = a.EndTime,
+                    Status = a.Status,
+                    Reason = a.Reason
+                }).ToList();
+
+                // Client and trainer counts
+                var allClients = await _context.ClientProfiles
+                    .Include(c => c.User)
+                    .Where(c => c.User != null)
+                    .ToListAsync();
+
+                var allTrainers = await _context.TrainerProfiles
+                    .Include(t => t.User)
+                    .Where(t => t.User != null)
+                    .ToListAsync();
+
+                var viewModel = new ReportsAndAnalyticsViewModel
+                {
+                    StartDate = actualStartDate,
+                    EndDate = actualEndDate,
+                    NewRegistrationsThisPeriod = newUsers.Count,
+                    NewClientsThisPeriod = newClients.Count,
+                    NewTrainersThisPeriod = newTrainers.Count,
+                    TotalActiveClients = allClients.Count(c => c.User?.IsActive ?? false),
+                    TotalInactiveClients = allClients.Count(c => !(c.User?.IsActive ?? false)),
+                    TotalActiveTrainers = allTrainers.Count(t => t.User?.IsActive ?? false),
+                    TotalInactiveTrainers = allTrainers.Count(t => !(t.User?.IsActive ?? false)),
+                    TotalAppointmentsThisPeriod = appointmentsThisPeriod.Count,
+                    CompletedAppointmentsThisPeriod = completedAppointments,
+                    CancelledAppointmentsThisPeriod = cancelledAppointments,
+                    PendingAppointmentsThisPeriod = pendingAppointments,
+                    ApprovedAppointmentsThisPeriod = approvedAppointments,
+                    CompletionRate = appointmentsThisPeriod.Count > 0 ? (completedAppointments * 100.0 / appointmentsThisPeriod.Count) : 0,
+                    CancellationRate = appointmentsThisPeriod.Count > 0 ? (cancelledAppointments * 100.0 / appointmentsThisPeriod.Count) : 0,
+                    UserRegistrationDetails = userRegDetails,
+                    AppointmentDetails = appointmentDetails,
+                    CurrentPage = page,
+                    TotalRecords = appointmentDetails.Count
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating reports");
+                TempData["ErrorMessage"] = "Error generating reports: " + ex.Message;
+                return RedirectToAction("Index");
+            }
+        }
+
+        [HttpGet("reports/export-csv")]
+        public async Task<IActionResult> ExportReportsCsv(DateTime? startDate, DateTime? endDate)
+        {
+            try
+            {
+                var actualStartDate = startDate ?? DateTime.UtcNow.AddMonths(-1);
+                var actualEndDate = endDate ?? DateTime.UtcNow;
+
+                var appointmentsThisPeriod = await _context.Appointments
+                    .Where(a => a.CreatedAt >= actualStartDate && a.CreatedAt <= actualEndDate)
+                    .Include(a => a.Client)
+                    .Include(a => a.Trainer)
+                    .ToListAsync();
+
+                var csv = new System.Text.StringBuilder();
+                csv.AppendLine("Appointment ID,Client Name,Trainer Name,Start Time,End Time,Status,Reason");
+
+                foreach (var apt in appointmentsThisPeriod)
+                {
+                    var clientName = apt.Client?.User != null ? $"{apt.Client.User.FirstName} {apt.Client.User.LastName}".Trim() : "Unknown";
+                    var trainerName = apt.Trainer?.User != null ? $"{apt.Trainer.User.FirstName} {apt.Trainer.User.LastName}".Trim() : "Unknown";
+                    csv.AppendLine($"{apt.AppointmentID},\"{clientName}\",\"{trainerName}\",{apt.StartTime:yyyy-MM-dd HH:mm},{apt.EndTime:yyyy-MM-dd HH:mm},{apt.Status},\"{apt.Reason ?? ""}\"");
+                }
+
+                var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+                return File(bytes, "text/csv", $"appointments_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting reports");
+                TempData["ErrorMessage"] = "Error exporting reports: " + ex.Message;
+                return RedirectToAction("Reports");
+            }
+        }
+
+        [HttpGet("reports/export")]
+        public async Task<IActionResult> ExportReport(string? reportType, string? format, DateTime? startDate, DateTime? endDate)
+        {
+            try
+            {
+                var actualStartDate = startDate ?? DateTime.UtcNow.AddMonths(-1);
+                var actualEndDate = endDate ?? DateTime.UtcNow;
+                var exportFormat = format ?? "csv";
+                var type = reportType ?? "appointments";
+
+                // Generate appropriate report based on type
+                return exportFormat switch
+                {
+                    "csv" => await ExportReportAsCSV(type, actualStartDate, actualEndDate),
+                    "excel" => await ExportReportAsExcel(type, actualStartDate, actualEndDate),
+                    "pdf" => await ExportReportAsPDF(type, actualStartDate, actualEndDate),
+                    _ => await ExportReportAsCSV(type, actualStartDate, actualEndDate)
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting report");
+                TempData["ErrorMessage"] = "Error exporting report: " + ex.Message;
+                return RedirectToAction("Reports");
+            }
+        }
+
+        private async Task<IActionResult> ExportReportAsCSV(string reportType, DateTime startDate, DateTime endDate)
+        {
+            var csv = new System.Text.StringBuilder();
+
+            return reportType switch
+            {
+                "analytics" => await ExportAnalyticsAsCSV(startDate, endDate),
+                "users-report" => await ExportUsersAsCSV(startDate, endDate),
+                "appointments-report" => await ExportAppointmentsAsCSV(startDate, endDate),
+                "trainers-report" => await ExportTrainersAsCSV(startDate, endDate),
+                "workouts-report" => ExportWorkoutsAsCSV(),
+                "diet-report" => ExportDietAsCSV(),
+                "progress-report" => ExportProgressAsCSV(),
+                _ => await ExportAppointmentsAsCSV(startDate, endDate)
+            };
+        }
+
+        private async Task<IActionResult> ExportAnalyticsAsCSV(DateTime startDate, DateTime endDate)
+        {
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("Analytics Report");
+            csv.AppendLine($"Period: {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
+            csv.AppendLine();
+            csv.AppendLine("Metric,Value");
+
+            var users = await _context.Users.ToListAsync();
+            var appointments = await _context.Appointments
+                .Where(a => a.CreatedAt >= startDate && a.CreatedAt <= endDate)
+                .ToListAsync();
+
+            csv.AppendLine($"Total Users,{users.Count}");
+            csv.AppendLine($"Active Users,{users.Count(u => u.IsActive)}");
+            csv.AppendLine($"Total Appointments,{appointments.Count}");
+            csv.AppendLine($"Completed Appointments,{appointments.Count(a => a.Status == "Completed")}");
+            csv.AppendLine($"Pending Appointments,{appointments.Count(a => a.Status == "Pending")}");
+            csv.AppendLine($"Cancelled Appointments,{appointments.Count(a => a.Status == "Cancelled")}");
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+            return File(bytes, "text/csv", $"analytics_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
+        }
+
+        private async Task<IActionResult> ExportUsersAsCSV(DateTime startDate, DateTime endDate)
+        {
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("User ID,Email,First Name,Last Name,Role,Status,Created Date");
+
+            var users = await _context.Users
+                .Include(u => u.Role)
+                .Where(u => u.CreatedAt >= startDate && u.CreatedAt <= endDate)
+                .ToListAsync();
+
+            foreach (var user in users)
+            {
+                csv.AppendLine($"{user.UserID},\"{user.Email}\",\"{user.FirstName}\",\"{user.LastName}\",\"{user.Role?.RoleName ?? "N/A"}\",\"{(user.IsActive ? "Active" : "Inactive")}\",{user.CreatedAt:yyyy-MM-dd HH:mm}");
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+            return File(bytes, "text/csv", $"users_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
+        }
+
+        private async Task<IActionResult> ExportAppointmentsAsCSV(DateTime startDate, DateTime endDate)
+        {
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("Appointment ID,Client,Trainer,Start Time,End Time,Duration (min),Status,Reason");
+
+            var appointments = await _context.Appointments
+                .Where(a => a.CreatedAt >= startDate && a.CreatedAt <= endDate)
+                .Include(a => a.Client).ThenInclude(c => c.User)
+                .Include(a => a.Trainer).ThenInclude(t => t.User)
+                .ToListAsync();
+
+            foreach (var apt in appointments)
+            {
+                var clientName = apt.Client?.User != null ? $"{apt.Client.User.FirstName} {apt.Client.User.LastName}".Trim() : "Unknown";
+                var trainerName = apt.Trainer?.User != null ? $"{apt.Trainer.User.FirstName} {apt.Trainer.User.LastName}".Trim() : "Unknown";
+                var duration = (apt.EndTime - apt.StartTime).TotalMinutes;
+                csv.AppendLine($"{apt.AppointmentID},\"{clientName}\",\"{trainerName}\",{apt.StartTime:yyyy-MM-dd HH:mm},{apt.EndTime:yyyy-MM-dd HH:mm},{duration:F0},{apt.Status},\"{apt.Reason ?? ""}\"");
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+            return File(bytes, "text/csv", $"appointments_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
+        }
+
+        private async Task<IActionResult> ExportTrainersAsCSV(DateTime startDate, DateTime endDate)
+        {
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("Trainer ID,Name,Email,Total Clients,Total Appointments,Completed Appointments,Specialization");
+
+            var trainers = await _context.TrainerProfiles
+                .Include(t => t.User)
+                .ToListAsync();
+
+            foreach (var trainer in trainers)
+            {
+                var appointments = await _context.Appointments
+                    .Where(a => a.TrainerID == trainer.TrainerProfileID && a.CreatedAt >= startDate && a.CreatedAt <= endDate)
+                    .ToListAsync();
+
+                var completedCount = appointments.Count(a => a.Status == "Completed");
+                csv.AppendLine($"{trainer.TrainerProfileID},\"{trainer.User?.FirstName} {trainer.User?.LastName}\",\"{trainer.User?.Email}\",0,{appointments.Count},{completedCount},\"{trainer.Specialization ?? ""}\"");
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+            return File(bytes, "text/csv", $"trainers_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
+        }
+
+        private IActionResult ExportWorkoutsAsCSV()
+        {
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("Workout Plans Report");
+            csv.AppendLine("No workout data available - Feature integration pending");
+            csv.AppendLine();
+            csv.AppendLine("Client,Plan Name,Start Date,End Date,Status");
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+            return File(bytes, "text/csv", $"workouts_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
+        }
+
+        private IActionResult ExportDietAsCSV()
+        {
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("Diet Plans Report");
+            csv.AppendLine("No diet data available - Feature integration pending");
+            csv.AppendLine();
+            csv.AppendLine("Client,Plan Name,Calories Target,Meals Per Day,Status");
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+            return File(bytes, "text/csv", $"diet_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
+        }
+
+        private IActionResult ExportProgressAsCSV()
+        {
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("Progress & Health Metrics Report");
+            csv.AppendLine("No progress data available - Feature integration pending");
+            csv.AppendLine();
+            csv.AppendLine("Client,Goal,Target,Current,Progress %,Status");
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+            return File(bytes, "text/csv", $"progress_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
+        }
+
+        private async Task<IActionResult> ExportReportAsExcel(string reportType, DateTime startDate, DateTime endDate)
+        {
+            // For Excel, we'll use CSV for now with .xlsx extension
+            // Full Excel export would require a library like EPPlus or ClosedXML
+            return await ExportReportAsCSV(reportType, startDate, endDate);
+        }
+
+        private async Task<IActionResult> ExportReportAsPDF(string reportType, DateTime startDate, DateTime endDate)
+        {
+            // PDF export would require a library like iTextSharp or SelectPdf
+            // For now, return CSV as fallback
+            return await ExportReportAsCSV(reportType, startDate, endDate);
+        }
+
+        #endregion
+
+        #region Activation and Security Management
+
+        [HttpGet("activation-security")]
+        public async Task<IActionResult> ActivationSecurity(string? selectedStatus, int page = 1)
+        {
+            try
+            {
+                var clientRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Client");
+                var trainerRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Trainer");
+
+                // Get all users
+                var allUsers = await _context.Users
+                    .Include(u => u.Role)
+                    .ToListAsync();
+
+                // Pending activations - join with users to get user info
+                var pendingTokens = await _context.ActivationTokens
+                    .Where(t => !t.IsUsed && t.ExpiresAt > DateTime.UtcNow)
+                    .ToListAsync();
+
+                var expiredTokens = await _context.ActivationTokens
+                    .Where(t => !t.IsUsed && t.ExpiresAt <= DateTime.UtcNow)
+                    .ToListAsync();
+
+                var allPendingTokens = pendingTokens.Concat(expiredTokens).ToList();
+
+                var pendingActivations = new List<PendingActivationRecord>();
+                foreach (var t in allPendingTokens)
+                {
+                    var user = allUsers.FirstOrDefault(u => u.UserID == t.UserID);
+                    if (user != null)
+                    {
+                        pendingActivations.Add(new PendingActivationRecord
+                        {
+                            UserId = user.UserID,
+                            Email = user.Email,
+                            FirstName = user.FirstName,
+                            LastName = user.LastName,
+                            Role = user.Role?.RoleName ?? "Unknown",
+                            RegistrationDate = user.CreatedAt,
+                            TokenExpiryDate = t.ExpiresAt,
+                            IsExpired = t.ExpiresAt <= DateTime.UtcNow,
+                            ActivationTokenId = t.ActivationTokenID
+                        });
+                    }
+                }
+
+                // Account status
+                var accountStatus = allUsers.Select(u => new AccountStatusRecord
+                {
+                    UserId = u.UserID,
+                    Email = u.Email,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Role = u.Role?.RoleName ?? "Unknown",
+                    IsActive = u.IsActive,
+                    IsLocked = u.LockoutEnd.HasValue && u.LockoutEnd > DateTime.UtcNow,
+                    LockoutEnd = u.LockoutEnd,
+                    CreatedAt = u.CreatedAt,
+                    LastLoginAt = u.LastLoginAt
+                }).ToList();
+
+                // Failed login attempts
+                var failedLogins = allUsers
+                    .Where(u => u.FailedLoginCount > 0)
+                    .Select(u => new FailedLoginRecord
+                    {
+                        UserId = u.UserID,
+                        Email = u.Email,
+                        FirstName = u.FirstName,
+                        LastName = u.LastName,
+                        FailedAttempts = u.FailedLoginCount,
+                        LastFailedAttempt = u.LastLoginAt ?? DateTime.UtcNow,
+                        IsCurrentlyLocked = u.LockoutEnd.HasValue && u.LockoutEnd > DateTime.UtcNow,
+                        LockoutEnd = u.LockoutEnd
+                    })
+                    .ToList();
+
+                // Security audit events
+                var auditLogs = await _context.AuditLogs
+                    .OrderByDescending(a => a.CreatedAt)
+                    .Take(100)
+                    .ToListAsync();
+
+                var securityEvents = auditLogs.Select(a => new SecurityAuditRecord
+                {
+                    AuditId = a.AuditID,
+                    Action = a.Action,
+                    Details = a.Details,
+                    CreatedAt = a.CreatedAt,
+                    PerformedBy = a.UserID.HasValue ? allUsers.FirstOrDefault(u => u.UserID == a.UserID)?.Email ?? "System" : "System",
+                    IPAddress = a.IPAddress,
+                    Severity = DetermineEventSeverity(a.Action)
+                }).ToList();
+
+                var viewModel = new ActivationSecurityViewModel
+                {
+                    PendingActivations = pendingActivations,
+                    TotalPendingActivations = pendingTokens.Count,
+                    TotalExpiredTokens = expiredTokens.Count,
+                    AccountStatus = accountStatus,
+                    TotalActiveAccounts = accountStatus.Count(a => a.IsActive && !a.IsLocked),
+                    TotalInactiveAccounts = accountStatus.Count(a => !a.IsActive),
+                    TotalLockedAccounts = accountStatus.Count(a => a.IsLocked),
+                    FailedLoginAttempts = failedLogins,
+                    TotalFailedAttemptsThisPeriod = failedLogins.Sum(f => f.FailedAttempts),
+                    SecurityAuditEvents = securityEvents,
+                    CurrentPage = page
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading activation and security data");
+                TempData["ErrorMessage"] = "Error loading activation and security data: " + ex.Message;
+                return RedirectToAction("Index");
+            }
+        }
+
+        [HttpPost("activation-security/renew-token/{tokenId}")]
+        public async Task<IActionResult> RenewActivationToken(int tokenId)
+        {
+            try
+            {
+                var token = await _context.ActivationTokens.FindAsync(tokenId);
+                if (token == null)
+                    return NotFound();
+
+                // Renew the token for another 7 days
+                token.ExpiresAt = DateTime.UtcNow.AddDays(7);
+                _context.ActivationTokens.Update(token);
+                await _context.SaveChangesAsync();
+
+                await LogAudit($"Renewed activation token for user {token.UserID}", "TokenRenewal", $"TokenID:{tokenId}");
+                TempData["SuccessMessage"] = "Activation token renewed successfully.";
+                return RedirectToAction("ActivationSecurity");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error renewing activation token");
+                TempData["ErrorMessage"] = "Error renewing activation token: " + ex.Message;
+                return RedirectToAction("ActivationSecurity");
+            }
+        }
+
+        [HttpPost("activation-security/unlock-account/{userId}")]
+        public async Task<IActionResult> UnlockAccount(int userId)
+        {
+            try
+            {
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                    return NotFound();
+
+                user.LockoutEnd = null;
+                user.FailedLoginCount = 0;
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                await LogAudit($"Unlocked account for user {userId}", "AccountUnlock", user.Email);
+                TempData["SuccessMessage"] = "Account unlocked successfully.";
+                return RedirectToAction("ActivationSecurity");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unlocking account");
+                TempData["ErrorMessage"] = "Error unlocking account: " + ex.Message;
+                return RedirectToAction("ActivationSecurity");
+            }
+        }
+
+        [HttpPost("activation-security/toggle-account-status/{userId}")]
+        public async Task<IActionResult> ToggleAccountStatus(int userId)
+        {
+            try
+            {
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                    return NotFound();
+
+                user.IsActive = !user.IsActive;
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                var action = user.IsActive ? "activated" : "deactivated";
+                await LogAudit($"{char.ToUpper(action[0])}{action.Substring(1)} user account {userId}", "AccountStatusChange", user.Email);
+                TempData["SuccessMessage"] = $"Account {action} successfully.";
+                return RedirectToAction("ActivationSecurity");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error toggling account status");
+                TempData["ErrorMessage"] = "Error toggling account status: " + ex.Message;
+                return RedirectToAction("ActivationSecurity");
+            }
+        }
+
+        private string DetermineEventSeverity(string action)
+        {
+            return action switch
+            {
+                "UserCreate" => "Info",
+                "UserUpdate" => "Info",
+                "UserDelete" => "Warning",
+                "AccountUnlock" => "Warning",
+                "FailedLogin" => "Warning",
+                "PermissionChange" => "Critical",
+                "RoleChange" => "Critical",
+                "SettingsEdit" => "Warning",
+                _ => "Info"
+            };
         }
 
         #endregion

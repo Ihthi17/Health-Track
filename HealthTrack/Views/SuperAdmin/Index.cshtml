@@ -298,11 +298,11 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(90deg, #007bff, #0056b3);
+        background: linear-gradient(90deg, #123B4A, #0d2835);
     }
 
     .stat-card.stat-clients::before {
-        background: linear-gradient(90deg, #28a745, #1e7e34);
+        background: linear-gradient(90deg, #16A6A1, #0f7571);
     }
 
     .stat-card.stat-trainers::before {
@@ -310,7 +310,7 @@
     }
 
     .stat-card.stat-appointments::before {
-        background: linear-gradient(90deg, #17a2b8, #0d6672);
+        background: linear-gradient(90deg, #123B4A, #0d2835);
     }
 
     .stat-card:hover {
@@ -320,13 +320,17 @@
 
     .stat-icon {
         font-size: 32px;
-        color: #667eea;
+        color: #123B4A;
         margin-bottom: 10px;
         opacity: 0.8;
     }
 
+    .stat-card.stat-clients .stat-icon {
+        color: #16A6A1;
+    }
+
     .stat-value {
-        color: #007bff;
+        color: #123B4A;
         font-weight: bold;
         margin: 10px 0;
         font-size: 32px;
@@ -334,6 +338,28 @@
 
     .card-header {
         font-weight: 600;
+        background-color: #123B4A !important;
+    }
+
+    .card-header.bg-info {
+        background-color: #123B4A !important;
+    }
+
+    .card-header.bg-success {
+        background-color: #16A6A1 !important;
+    }
+
+    .card-header.bg-warning {
+        background-color: #ffc107 !important;
+        color: #000 !important;
+    }
+
+    .card-header.bg-primary {
+        background-color: #123B4A !important;
+    }
+
+    .card-header.bg-secondary {
+        background-color: #2D3E47 !important;
     }
 
     .notification-list {

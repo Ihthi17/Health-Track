@@ -1,0 +1,605 @@
+@model ReportsAndAnalyticsViewModel
+
+@{
+    ViewData["Title"] = "Reports and Analytics";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <!-- Report Type Selection -->
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-primary text-white">
+            <h6 class="mb-0"><i class="fas fa-file-alt me-2"></i> Select Report Type</h6>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs mb-4" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
+                        <i class="fas fa-chart-bar me-2"></i>Analytics Overview
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users-report" type="button" role="tab">
+                        <i class="fas fa-users me-2"></i>User Management
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#appointments-report" type="button" role="tab">
+                        <i class="fas fa-calendar-check me-2"></i>Appointments
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="trainers-tab" data-bs-toggle="tab" data-bs-target="#trainers-report" type="button" role="tab">
+                        <i class="fas fa-sitemap me-2"></i>Trainer Assignments
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="workouts-tab" data-bs-toggle="tab" data-bs-target="#workouts-report" type="button" role="tab">
+                        <i class="fas fa-dumbbell me-2"></i>Workout Plans
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="diet-tab" data-bs-toggle="tab" data-bs-target="#diet-report" type="button" role="tab">
+                        <i class="fas fa-utensils me-2"></i>Diet Management
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="progress-tab" data-bs-toggle="tab" data-bs-target="#progress-report" type="button" role="tab">
+                        <i class="fas fa-chart-line me-2"></i>Progress & Goals
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Date Range & Export Controls -->
+            <form id="reportFilterForm" class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" id="startDate" name="startDate" class="form-control" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">End Date</label>
+                    <input type="date" id="endDate" name="endDate" class="form-control" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Export Format</label>
+                    <select id="exportFormat" class="form-select">
+                        <option value="csv">CSV</option>
+                        <option value="excel">Excel</option>
+                        <option value="pdf">PDF</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end gap-2">
+                    <button type="button" id="generateReportBtn" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i> Generate Report
+                    </button>
+                    <button type="button" id="exportReportBtn" class="btn btn-success">
+                        <i class="fas fa-download me-1"></i> Export Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Analytics Overview Tab -->
+        <div class="tab-pane fade show active" id="analytics" role="tabpanel">
+            <!-- Summary Stats -->
+            <div class="row mb-4">
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="text-primary text-uppercase mb-1 small font-weight-bold">New Registrations</div>
+                            <div class="h3 mb-0">@Model.NewRegistrationsThisPeriod</div>
+                            <small class="text-muted">This period</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="text-success text-uppercase mb-1 small font-weight-bold">Total Appointments</div>
+                            <div class="h3 mb-0">@Model.TotalAppointmentsThisPeriod</div>
+                            <small class="text-muted">@(Math.Round(Model.CompletionRate))% completion</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="text-info text-uppercase mb-1 small font-weight-bold">Active Clients</div>
+                            <div class="h3 mb-0">@Model.TotalActiveClients</div>
+                            <small class="text-muted">@Model.TotalInactiveClients inactive</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="text-warning text-uppercase mb-1 small font-weight-bold">Active Trainers</div>
+                            <div class="h3 mb-0">@Model.TotalActiveTrainers</div>
+                            <small class="text-muted">@Model.TotalInactiveTrainers inactive</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Appointment Status Breakdown -->
+            <div class="row mb-4">
+                <div class="col-lg-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i> Appointment Status</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="badge bg-warning me-2">●</span>
+                                        <div>
+                                            <p class="mb-0 small">Pending</p>
+                                            <h6 class="mb-0">@Model.PendingAppointmentsThisPeriod</h6>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-danger me-2">●</span>
+                                        <div>
+                                            <p class="mb-0 small">Cancelled</p>
+                                            <h6 class="mb-0">@Model.CancelledAppointmentsThisPeriod</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="badge bg-success me-2">●</span>
+                                        <div>
+                                            <p class="mb-0 small">Completed</p>
+                                            <h6 class="mb-0">@Model.CompletedAppointmentsThisPeriod</h6>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-primary me-2">●</span>
+                                        <div>
+                                            <p class="mb-0 small">Approved</p>
+                                            <h6 class="mb-0">@Model.ApprovedAppointmentsThisPeriod</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-user-chart me-2"></i> User Distribution</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="fas fa-users text-primary fa-2x me-3"></i>
+                                        <div>
+                                            <p class="mb-0 small">New Clients</p>
+                                            <h6 class="mb-0">@Model.NewClientsThisPeriod</h6>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user-tie text-success fa-2x me-3"></i>
+                                        <div>
+                                            <p class="mb-0 small">New Trainers</p>
+                                            <h6 class="mb-0">@Model.NewTrainersThisPeriod</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="progress mb-3">
+                                        <div class="progress-bar bg-success" style="width: @(Model.TotalActiveClients > 0 ? (Model.TotalActiveClients * 100 / (Model.TotalActiveClients + Model.TotalInactiveClients)) : 0)%">
+                                            Active Clients
+                                        </div>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-info" style="width: @(Model.TotalActiveTrainers > 0 ? (Model.TotalActiveTrainers * 100 / (Model.TotalActiveTrainers + Model.TotalInactiveTrainers)) : 0)%">
+                                            Active Trainers
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Management Report Tab -->
+        <div class="tab-pane fade" id="users-report" role="tabpanel">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="fas fa-users me-2"></i> User Management Report (@Model.UserRegistrationDetails.Count)</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.UserRegistrationDetails.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                        <th>Registered On</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var user in Model.UserRegistrationDetails)
+                                    {
+                                        <tr>
+                                            <td><strong>@user.Email</strong></td>
+                                            <td>@user.FirstName @user.LastName</td>
+                                            <td><span class="badge bg-primary">@user.Role</span></td>
+                                            <td>@user.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                            <td>
+                                                <span class="badge @(user.IsActive ? "bg-success" : "bg-danger")">
+                                                    @(user.IsActive ? "Active" : "Inactive")
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mb-0">No user data available in this period.</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointments Report Tab -->
+        <div class="tab-pane fade" id="appointments-report" role="tabpanel">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="fas fa-calendar-check me-2"></i> Appointment Details (@Model.AppointmentDetails.Count)</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.AppointmentDetails.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Client</th>
+                                        <th>Trainer</th>
+                                        <th>Date & Time</th>
+                                        <th>Duration</th>
+                                        <th>Status</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var apt in Model.AppointmentDetails)
+                                    {
+                                        var statusBadge = apt.Status switch {
+                                            "Completed" => "bg-success",
+                                            "Pending" => "bg-warning text-dark",
+                                            "Approved" => "bg-info",
+                                            "Cancelled" => "bg-danger",
+                                            _ => "bg-secondary"
+                                        };
+                                        var duration = (apt.EndTime - apt.StartTime).TotalMinutes;
+                                        <tr>
+                                            <td><strong>@apt.ClientName</strong></td>
+                                            <td>@apt.TrainerName</td>
+                                            <td>@apt.StartTime.ToString("MMM dd, HH:mm")</td>
+                                            <td>@duration minutes</td>
+                                            <td><span class="badge @statusBadge">@apt.Status</span></td>
+                                            <td>@(string.IsNullOrEmpty(apt.Reason) ? "-" : apt.Reason)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mb-0">No appointments in this period.</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Trainer Assignments Report Tab -->
+        <div class="tab-pane fade" id="trainers-report" role="tabpanel">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="fas fa-sitemap me-2"></i> Trainer Assignment Report</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Trainer assignment data will be populated once trainer-client assignments are tracked in the system.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Trainer Name</th>
+                                    <th>Total Clients Assigned</th>
+                                    <th>Total Appointments</th>
+                                    <th>Completed Appointments</th>
+                                    <th>Completion Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No data available</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workout Plans Report Tab -->
+        <div class="tab-pane fade" id="workouts-report" role="tabpanel">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="fas fa-dumbbell me-2"></i> Workout Plans Report</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Workout plan and logs data will be populated once these features are integrated.
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="card border-left-primary">
+                                <div class="card-body">
+                                    <div class="text-muted small">Total Workout Plans</div>
+                                    <h3>0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-left-success">
+                                <div class="card-body">
+                                    <div class="text-muted small">Active Plans</div>
+                                    <h3>0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-left-info">
+                                <div class="card-body">
+                                    <div class="text-muted small">Completed Plans</div>
+                                    <h3>0</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Plan Name</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Exercises Count</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No data available</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diet Management Report Tab -->
+        <div class="tab-pane fade" id="diet-report" role="tabpanel">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="fas fa-utensils me-2"></i> Diet Management Report</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Diet plan data will be populated once diet management features are integrated.
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="card border-left-primary">
+                                <div class="card-body">
+                                    <div class="text-muted small">Total Diet Plans</div>
+                                    <h3>0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-left-success">
+                                <div class="card-body">
+                                    <div class="text-muted small">Active Plans</div>
+                                    <h3>0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-left-info">
+                                <div class="card-body">
+                                    <div class="text-muted small">Nutrition Tracked</div>
+                                    <h3>0</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Plan Name</th>
+                                    <th>Calories Target</th>
+                                    <th>Meals Per Day</th>
+                                    <th>Start Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No data available</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress & Goals Report Tab -->
+        <div class="tab-pane fade" id="progress-report" role="tabpanel">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i> Progress & Health Metrics Report</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Health metrics, progress tracking, and goals will be populated once these features are integrated.
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="card border-left-primary">
+                                <div class="card-body">
+                                    <div class="text-muted small">Goals Tracked</div>
+                                    <h3>0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-left-success">
+                                <div class="card-body">
+                                    <div class="text-muted small">Goals Achieved</div>
+                                    <h3>0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-left-info">
+                                <div class="card-body">
+                                    <div class="text-muted small">Health Records</div>
+                                    <h3>0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-left-warning">
+                                <div class="card-body">
+                                    <div class="text-muted small">Metrics Tracked</div>
+                                    <h3>0</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Goal</th>
+                                    <th>Target</th>
+                                    <th>Current</th>
+                                    <th>Progress %</th>
+                                    <th>Deadline</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">No data available</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-teal { background-color: #123B4A !important; }
+    .bg-accent { background-color: #16A6A1 !important; }
+    .btn-teal { background-color: #123B4A; border-color: #123B4A; color: white; }
+    .btn-teal:hover { background-color: #0d2835; border-color: #0d2835; color: white; }
+    .border-left-primary { border-left: 0.25rem solid #123B4A !important; }
+    .border-left-success { border-left: 0.25rem solid #16A6A1 !important; }
+    .border-left-info { border-left: 0.25rem solid #123B4A !important; }
+    .border-left-warning { border-left: 0.25rem solid #ffc107 !important; }
+    .text-primary { color: #123B4A !important; }
+    .text-success { color: #16A6A1 !important; }
+    .text-info { color: #123B4A !important; }
+    .text-warning { color: #ffc107 !important; }
+    .bg-primary { background-color: #123B4A !important; }
+    .bg-success { background-color: #16A6A1 !important; }
+    .bg-info { background-color: #123B4A !important; }
+
+    .nav-tabs .nav-link {
+        color: #2D3E47;
+        border-color: #E0EBF0;
+    }
+
+    .nav-tabs .nav-link:hover {
+        border-color: #16A6A1;
+        color: #16A6A1;
+    }
+
+    .nav-tabs .nav-link.active {
+        background-color: #123B4A;
+        color: white;
+        border-color: #123B4A;
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(22, 166, 161, 0.05);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(18, 59, 74, 0.1);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const generateBtn = document.getElementById('generateReportBtn');
+        const exportBtn = document.getElementById('exportReportBtn');
+        const exportFormat = document.getElementById('exportFormat');
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+
+        generateBtn.addEventListener('click', function () {
+            const params = new URLSearchParams({
+                startDate: startDate.value,
+                endDate: endDate.value
+            });
+            window.location.href = `/superadmin/reports?${params.toString()}`;
+        });
+
+        exportBtn.addEventListener('click', function () {
+            const activeTab = document.querySelector('.nav-link.active');
+            const reportType = activeTab.id.replace('-tab', '');
+            const format = exportFormat.value;
+            const params = new URLSearchParams({
+                startDate: startDate.value,
+                endDate: endDate.value,
+                reportType: reportType,
+                format: format
+            });
+            window.location.href = `/superadmin/reports/export?${params.toString()}`;
+        });
+    });
+</script>

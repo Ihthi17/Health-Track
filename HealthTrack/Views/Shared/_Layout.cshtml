@@ -1,20 +1,92 @@
-﻿<!DOCTYPE html>
+﻿@inject HealthTrack.Services.SystemSettingsService _settingsService
+
+@{
+    var systemName = _settingsService.GetSystemName() ?? "HealthTrack";
+    var systemLogo = _settingsService.GetSystemLogo();
+}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - HealthTrack</title>
+    <title>@ViewData["Title"] - @systemName</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/HealthTrack.styles.css" asp-append-version="true" />
+    <style>
+        :root {
+            --primary-dark: #123B4A;
+            --accent-teal: #16A6A1;
+            --bg-light: #F3F7F8;
+            --text-dark: #2D3E47;
+            --text-muted: #6B7F89;
+            --border-light: #E0EBF0;
+        }
+
+        .navbar-professional {
+            background-color: #FFFFFF;
+            border-bottom: 1px solid var(--border-light);
+            box-shadow: 0 2px 8px rgba(18, 59, 74, 0.05);
+            padding: 12px 0;
+        }
+
+        .navbar-brand-pro {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: var(--primary-dark) !important;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .navbar-brand-pro img {
+            max-height: 40px;
+            max-width: 40px;
+            object-fit: contain;
+        }
+
+        .navbar-brand-pro i {
+            color: var(--accent-teal);
+            font-size: 1.5rem;
+        }
+
+        .navbar-nav .nav-link {
+            color: var(--text-muted) !important;
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin-left: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: var(--accent-teal) !important;
+        }
+
+        body {
+            margin-bottom: 60px;
+            background-color: var(--bg-light);
+        }
+    </style>
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">HealthTrack</a>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-professional">
+            <div class="container-fluid px-3 px-lg-5">
+                <a class="navbar-brand-pro" asp-area="" asp-controller="Home" asp-action="Index">
+                    @if (!string.IsNullOrEmpty(systemLogo))
+                    {
+                        <img src="@systemLogo" alt="@systemName" />
+                    }
+                    else
+                    {
+                        <i class="fas fa-heartbeat"></i>
+                    }
+                    @systemName
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -22,25 +94,47 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
                 </div>
             </div>
         </nav>
-    </header>
+    </header> -->
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - HealthTrack - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer style="background-color: var(--bg-light); border-top: 1px solid var(--border-light); color: var(--text-muted); margin-top: 60px;">
+        <div class="container" style="padding: 40px 0;">
+            <div class="row">
+                <div class="col-md-6">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        @if (!string.IsNullOrEmpty(systemLogo))
+                        {
+                            <img src="@systemLogo" alt="@systemName" style="max-height: 30px; max-width: 30px; object-fit: contain;" />
+                        }
+                        else
+                        {
+                            <i class="fas fa-heartbeat" style="color: var(--accent-teal); font-size: 1.3rem;"></i>
+                        }
+                        <span style="font-weight: 700; color: var(--primary-dark); font-size: 1.1rem;">@systemName</span>
+                    </div>
+                    <p style="margin: 0; font-size: 0.9rem;">
+                        Professional health and fitness management platform.
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end" style="display: flex; align-items: center; justify-content: flex-end; gap: 20px; margin-top: 20px;">
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">Privacy</a>
+                    <span style="color: var(--border-light);">|</span>
+                    <span style="font-size: 0.9rem;">&copy; 2026 @systemName. All rights reserved.</span>
+                </div>
+            </div>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

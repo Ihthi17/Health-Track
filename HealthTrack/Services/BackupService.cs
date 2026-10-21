@@ -316,7 +316,7 @@ namespace HealthTrack.Services
                         {
                             var oldBackups = Directory.GetFiles(backupDirectory, "*.bak")
                                 .OrderByDescending(f => File.GetCreationTime(f))
-                                .Skip(settings.BackupRetentionCount)
+                                .Skip(settings.BackupRetentionCount ?? 5)
                                 .ToList();
 
                             foreach (var oldBackup in oldBackups)

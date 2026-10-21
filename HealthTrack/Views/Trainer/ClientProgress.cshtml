@@ -1,0 +1,215 @@
+@{
+    ViewData["Title"] = "Client Progress";
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">Client Progress Tracking</h1>
+            <p class="text-muted">Monitor and track your clients' progress</p>
+        </div>
+        <a href="/trainer" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-end">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <label class="form-label small">Select Client</label>
+                    <select class="form-select">
+                        <option>All Clients</option>
+                        <option>John Doe</option>
+                        <option>Jane Smith</option>
+                        <option>Mike Johnson</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <label class="form-label small">Time Period</label>
+                    <select class="form-select">
+                        <option>Last 30 Days</option>
+                        <option>Last 60 Days</option>
+                        <option>Last 90 Days</option>
+                        <option>Last 6 Months</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-1"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Average Weight Change</h6>
+                    <div class="d-flex align-items-baseline justify-content-between">
+                        <h3 class="text-success">-2.5 kg</h3>
+                        <span class="badge bg-success">
+                            <i class="fas fa-arrow-down me-1"></i> 5%
+                        </span>
+                    </div>
+                    <p class="small text-muted mt-2">Compared to 30 days ago</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Workout Completion Rate</h6>
+                    <div class="d-flex align-items-baseline justify-content-between">
+                        <h3 class="text-info">85%</h3>
+                        <span class="badge bg-info">
+                            <i class="fas fa-arrow-up me-1"></i> 10%
+                        </span>
+                    </div>
+                    <p class="small text-muted mt-2">Avg across all clients</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Muscle Gain</h6>
+                    <div class="d-flex align-items-baseline justify-content-between">
+                        <h3 class="text-warning">+1.2 kg</h3>
+                        <span class="badge bg-warning">
+                            <i class="fas fa-arrow-up me-1"></i> 3%
+                        </span>
+                    </div>
+                    <p class="small text-muted mt-2">Estimated lean mass</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Active Clients</h6>
+                    <div class="d-flex align-items-baseline justify-content-between">
+                        <h3 class="text-primary">12</h3>
+                        <span class="badge bg-primary">
+                            <i class="fas fa-check me-1"></i> 100%
+                        </span>
+                    </div>
+                    <p class="small text-muted mt-2">Currently training</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Progress Details -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i> Individual Client Progress</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Client Name</th>
+                            <th>Current Weight</th>
+                            <th>Weight Change</th>
+                            <th>Workouts Done</th>
+                            <th>Completion %</th>
+                            <th>Last Update</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <strong>John Doe</strong>
+                            </td>
+                            <td>82 kg</td>
+                            <td>
+                                <span class="badge bg-success">
+                                    <i class="fas fa-arrow-down me-1"></i> -3.2 kg
+                                </span>
+                            </td>
+                            <td>24 / 28</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar" style="width: 85%;">85%</div>
+                                </div>
+                            </td>
+                            <td><small class="text-muted">2 days ago</small></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>Jane Smith</strong>
+                            </td>
+                            <td>65 kg</td>
+                            <td>
+                                <span class="badge bg-success">
+                                    <i class="fas fa-arrow-down me-1"></i> -2.1 kg
+                                </span>
+                            </td>
+                            <td>30 / 30</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar" style="width: 100%; background-color: #22C55E;">100%</div>
+                                </div>
+                            </td>
+                            <td><small class="text-muted">Today</small></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>Mike Johnson</strong>
+                            </td>
+                            <td>92 kg</td>
+                            <td>
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-arrow-up me-1"></i> +1.5 kg
+                                </span>
+                            </td>
+                            <td>18 / 24</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar" style="width: 75%; background-color: #F59E0B;">75%</div>
+                                </div>
+                            </td>
+                            <td><small class="text-muted">5 days ago</small></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .progress {
+        background-color: #E9ECEF;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(91, 79, 163, 0.05);
+    }
+</style>

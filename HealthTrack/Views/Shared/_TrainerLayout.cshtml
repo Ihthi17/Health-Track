@@ -1,0 +1,452 @@
+@{
+    var controllerName = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var actionName = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+}
+
+@inject HealthTrack.Services.SystemSettingsService _settingsService
+
+@{
+    var systemName = _settingsService.GetSystemName() ?? "HealthTrack";
+    var systemLogo = _settingsService.GetSystemLogo();
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - @systemName Trainer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="~/css/site.css" rel="stylesheet" />
+    <style>
+        :root {
+            --primary-dark: #123B4A;
+            --accent-teal: #16A6A1;
+            --bg-light: #F3F7F8;
+            --text-dark: #2D3E47;
+            --text-muted: #6B7F89;
+            --border-light: #E0EBF0;
+            --white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #1a5a73 100%);
+            min-height: 100vh;
+            padding: 30px 0;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-logo img {
+            max-height: 35px;
+            max-width: 35px;
+            object-fit: contain;
+        }
+
+        .sidebar-section-title {
+            padding: 15px 20px 10px;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .sidebar-item {
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            margin: 0 8px;
+            border-radius: 6px;
+        }
+
+        .sidebar-item:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
+            transform: translateX(4px);
+        }
+
+        .sidebar-item.active {
+            background-color: var(--accent-teal);
+            color: white;
+        }
+
+        .sidebar-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            background-color: var(--white);
+            border-bottom: 2px solid var(--border-light);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            padding: 15px 30px;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-dark) !important;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .navbar-brand img {
+            max-height: 40px;
+            max-width: 40px;
+            object-fit: contain;
+        }
+
+        .navbar-brand i {
+            color: var(--accent-teal);
+        }
+
+        .nav-link {
+            color: var(--text-muted) !important;
+            font-weight: 500;
+            margin-left: 20px;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-dark) !important;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 40px;
+            background-color: var(--bg-light);
+            min-height: 100vh;
+        }
+
+        .page-title {
+            color: var(--text-dark);
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        /* Cards */
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            background-color: var(--white);
+        }
+
+        .card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #1a5a73 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            border: none;
+            padding: 20px;
+        }
+
+        .card-header h5 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        /* Stat Cards */
+        .stat-card {
+            border-left: 4px solid var(--accent-teal);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #1a5a73 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(18, 59, 74, 0.3);
+            color: white;
+        }
+
+        .btn-outline-primary {
+            color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+
+        .btn-outline-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+            color: white;
+        }
+
+        /* Tables */
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            font-weight: 600;
+            border: none;
+            padding: 15px;
+        }
+
+        .table tbody td {
+            padding: 15px;
+            border-color: var(--border-light);
+            vertical-align: middle;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(18, 59, 74, 0.05);
+        }
+
+        /* Badges */
+        .badge {
+            padding: 8px 12px;
+            font-weight: 500;
+            border-radius: 20px;
+        }
+
+        .badge.bg-warning {
+            background-color: #FFC107 !important;
+            color: #333;
+        }
+
+        .badge.bg-success {
+            background-color: #28A745 !important;
+            color: white;
+        }
+
+        .badge.bg-danger {
+            background-color: #DC3545 !important;
+            color: white;
+        }
+
+        .badge.bg-info {
+            background-color: #17A2B8 !important;
+            color: white;
+        }
+
+        /* Alerts */
+        .alert {
+            border: none;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            border-left-color: #17A2B8;
+            background-color: rgba(23, 162, 184, 0.1);
+            color: #0c5460;
+        }
+
+        .alert-success {
+            border-left-color: #28A745;
+            background-color: rgba(40, 167, 69, 0.1);
+            color: #155724;
+        }
+
+        .alert-danger {
+            border-left-color: #DC3545;
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #721c24;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--white);
+            border-top: 1px solid var(--border-light);
+            padding: 30px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                top: 0;
+                width: 250px;
+                height: 100vh;
+                transition: left 0.3s;
+                z-index: 1000;
+            }
+
+            .sidebar.show {
+                left: 0;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/trainer">
+                @if (!string.IsNullOrEmpty(systemLogo))
+                {
+                    <img src="@systemLogo" alt="@systemName" />
+                }
+                else
+                {
+                    <i class="fas fa-heartbeat"></i>
+                }
+                @systemName
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/trainer">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/trainer/profile">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="document.getElementById('logoutForm').submit(); return false;">
+                            <i class="fas fa-sign-out-alt me-1"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hidden Logout Form -->
+    <form id="logoutForm" action="/Account/Logout" method="post" style="display:none;">
+        @Html.AntiForgeryToken()
+    </form>
+
+    <!-- Main Layout -->
+    <div class="container-fluid">
+        <div class="row" style="min-height: calc(100vh - 60px);">
+            <!-- Sidebar -->
+            <div class="col-lg-2 col-md-3 sidebar d-none d-md-block">
+                <div class="sidebar-header">
+                    <div class="sidebar-logo">
+                        @if (!string.IsNullOrEmpty(systemLogo))
+                        {
+                            <img src="@systemLogo" alt="@systemName" />
+                        }
+                        else
+                        {
+                            <i class="fas fa-dumbbell"></i>
+                        }
+                        Trainer
+                    </div>
+                </div>
+
+                <div class="sidebar-section-title">Navigation</div>
+                <a href="/trainer" class="sidebar-item @(actionName == "Index" ? "active" : "")">
+                    <i class="fas fa-home"></i> <span>Dashboard</span>
+                </a>
+                <a href="/trainer/clients" class="sidebar-item @(actionName == "Clients" ? "active" : "")">
+                    <i class="fas fa-users"></i> <span>My Clients</span>
+                </a>
+                <a href="/trainer/appointments" class="sidebar-item @(actionName == "Appointments" ? "active" : "")">
+                    <i class="fas fa-calendar"></i> <span>Appointments</span>
+                </a>
+                <a href="/trainer/workouts" class="sidebar-item @(actionName == "WorkoutPlans" ? "active" : "")">
+                    <i class="fas fa-dumbbell"></i> <span>Workouts</span>
+                </a>
+                <a href="/trainer/diets" class="sidebar-item @(actionName == "DietPlans" ? "active" : "")">
+                    <i class="fas fa-apple-alt"></i> <span>Diet Plans</span>
+                </a>
+                <a href="/trainer/progress" class="sidebar-item @(actionName == "ClientProgress" ? "active" : "")">
+                    <i class="fas fa-chart-line"></i> <span>Progress</span>
+                </a>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-10 col-md-9 main-content">
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p class="mb-0">&copy; 2026 @systemName Fitness Management. All rights reserved.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</body>
+</html>

@@ -5,6 +5,14 @@
     Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
 }
 
+@{
+    // Get current backup settings from TempData or use defaults
+    var autoBackupEnabled = ViewBag.AutoBackupEnabled ?? false;
+    var backupTime = ViewBag.BackupTime ?? "02:00";
+    var backupFrequency = ViewBag.BackupFrequency ?? "Daily";
+    var backupDayOfWeek = ViewBag.BackupDayOfWeek ?? "";
+}
+
 <div class="backup-management">
     <div class="row mb-4">
         <div class="col-md-6">
@@ -32,7 +40,8 @@
                         <li><strong>Database:</strong> HealthTrackDB</li>
                         <li><strong>Server:</strong> .\SQLEXPRESS</li>
                         <li><strong>Backup Location:</strong> ./Backups/</li>
-                        <li><strong>Auto-Backup:</strong> Dynamic (set below)</li>
+                        <li><strong>Auto-Backup:</strong> <span id="autoBackupStatus">@(autoBackupEnabled ? "Enabled" : "Disabled")</span></li>
+                        <li><strong>Backup Time:</strong> <span id="backupTimeDisplay">@backupTime</span></li>
                         <li><strong>Type:</strong> Full Database Backup</li>
                     </ul>
                 </div>
@@ -48,11 +57,11 @@
                     <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Auto-Backup Schedule (Feature A)</h5>
                 </div>
                 <div class="card-body">
-                    <form method="post" action="/superadmin/backup/settings">
+                    <form method="post" action="/superadmin/backup/settings" id="backupSettingsForm">
                         <div class="row">
                             <div class="col-md-3 mb-3">
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="autoBackupEnabled" name="autoBackupEnabled" value="true">
+                                    <input class="form-check-input" type="checkbox" id="autoBackupEnabled" name="autoBackupEnabled" value="true" @(autoBackupEnabled ? "checked" : "")>
                                     <label class="form-check-label" for="autoBackupEnabled">
                                         <strong>Enable Auto-Backup</strong>
                                     </label>
@@ -60,33 +69,49 @@
                             </div>
                             <div class="col-md-3 mb-3">
                                 <label for="backupTime" class="form-label">Backup Time</label>
-                                <input type="time" class="form-control" id="backupTime" name="backupTime" value="02:00">
+                                <input type="time" class="form-control" id="backupTime" name="backupTime" value="@backupTime" required>
+                                <small class="text-muted">Time in 24-hour format</small>
                             </div>
                             <div class="col-md-3 mb-3">
                                 <label for="backupFrequency" class="form-label">Frequency</label>
-                                <select class="form-control" id="backupFrequency" name="backupFrequency">
-                                    <option value="Daily">Daily</option>
-                                    <option value="Weekly">Weekly</option>
-                                    <option value="Monthly">Monthly</option>
+                                <select class="form-control" id="backupFrequency" name="backupFrequency" required>
+                                    <option value="Daily" selected="@(backupFrequency == "Daily" ? "selected" : null)">Daily</option>
+                                    <option value="Weekly" selected="@(backupFrequency == "Weekly" ? "selected" : null)">Weekly</option>
+                                    <option value="Monthly" selected="@(backupFrequency == "Monthly" ? "selected" : null)">Monthly</option>
                                 </select>
                             </div>
                             <div class="col-md-3 mb-3">
                                 <label for="backupDayOfWeek" class="form-label">Day (for Weekly)</label>
                                 <select class="form-control" id="backupDayOfWeek" name="backupDayOfWeek">
                                     <option value="">Select Day</option>
-                                    <option value="0">Sunday</option>
-                                    <option value="1">Monday</option>
-                                    <option value="2">Tuesday</option>
-                                    <option value="3">Wednesday</option>
-                                    <option value="4">Thursday</option>
-                                    <option value="5">Friday</option>
-                                    <option value="6">Saturday</option>
+                                    <option value="0" selected="@(backupDayOfWeek == "0" ? "selected" : null)">Sunday</option>
+                                    <option value="1" selected="@(backupDayOfWeek == "1" ? "selected" : null)">Monday</option>
+                                    <option value="2" selected="@(backupDayOfWeek == "2" ? "selected" : null)">Tuesday</option>
+                                    <option value="3" selected="@(backupDayOfWeek == "3" ? "selected" : null)">Wednesday</option>
+                                    <option value="4" selected="@(backupDayOfWeek == "4" ? "selected" : null)">Thursday</option>
+                                    <option value="5" selected="@(backupDayOfWeek == "5" ? "selected" : null)">Friday</option>
+                                    <option value="6" selected="@(backupDayOfWeek == "6" ? "selected" : null)">Saturday</option>
                                 </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Current Settings:</strong>
+                                    Auto-Backup is <strong id="currentStatus">@(autoBackupEnabled ? "ENABLED" : "DISABLED")</strong> | 
+                                    Time: <strong id="currentTime">@backupTime</strong> | 
+                                    Frequency: <strong id="currentFrequency">@backupFrequency</strong>
+                                    <span id="dayInfo">@(backupFrequency == "Weekly" && !string.IsNullOrEmpty(backupDayOfWeek) ? $" | Day: {new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" }[int.Parse(backupDayOfWeek)]}" : "")</span>
+                                </div>
                             </div>
                         </div>
                         <div>
                             <button type="submit" class="btn btn-warning">
                                 <i class="fas fa-save"></i> Save Schedule Settings
+                            </button>
+                            <button type="reset" class="btn btn-secondary ms-2">
+                                <i class="fas fa-undo"></i> Reset
                             </button>
                         </div>
                     </form>
@@ -132,7 +157,7 @@
                                             <span class="badge bg-danger">@backup.Status</span>
                                         }
                                     </td>
-                                    <td>@FormatBytes(backup.Size)</td>
+                                    <td>@(backup.Size.HasValue ? FormatBytes(backup.Size.Value) : "N/A")</td>
                                     <td>
                                         @if (backup.RestoredDate.HasValue)
                                         {
@@ -189,10 +214,95 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-reset the Enable Auto-Backup toggle to OFF after page load
     const autoBackupToggle = document.getElementById('autoBackupEnabled');
+    const backupTimeInput = document.getElementById('backupTime');
+    const backupFrequencySelect = document.getElementById('backupFrequency');
+    const backupDaySelect = document.getElementById('backupDayOfWeek');
+    const currentStatus = document.getElementById('currentStatus');
+    const currentTime = document.getElementById('currentTime');
+    const currentFrequency = document.getElementById('currentFrequency');
+    const dayInfo = document.getElementById('dayInfo');
+    const autoBackupStatus = document.getElementById('autoBackupStatus');
+    const backupTimeDisplay = document.getElementById('backupTimeDisplay');
+
+    // Update display when toggle changes
     if (autoBackupToggle) {
-        autoBackupToggle.checked = false;
+        autoBackupToggle.addEventListener('change', function() {
+            const status = this.checked ? 'ENABLED' : 'DISABLED';
+            currentStatus.textContent = status;
+            autoBackupStatus.textContent = this.checked ? 'Enabled' : 'Disabled';
+        });
+    }
+
+    // Update display when time changes
+    if (backupTimeInput) {
+        backupTimeInput.addEventListener('change', function() {
+            currentTime.textContent = this.value;
+            backupTimeDisplay.textContent = this.value;
+        });
+    }
+
+    // Update display when frequency changes
+    if (backupFrequencySelect) {
+        backupFrequencySelect.addEventListener('change', function() {
+            currentFrequency.textContent = this.value;
+            // Show/hide day selection based on frequency
+            if (backupDaySelect) {
+                backupDaySelect.parentElement.style.display = this.value === 'Weekly' ? 'block' : 'none';
+            }
+        });
+    }
+
+    // Update display when day changes
+    if (backupDaySelect) {
+        backupDaySelect.addEventListener('change', function() {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            if (this.value) {
+                dayInfo.textContent = ' | Day: ' + days[parseInt(this.value)];
+            } else {
+                dayInfo.textContent = '';
+            }
+        });
+    }
+
+    // Show/hide day selection based on initial frequency
+    if (backupFrequencySelect && backupDaySelect) {
+        backupDaySelect.parentElement.style.display = backupFrequencySelect.value === 'Weekly' ? 'block' : 'none';
     }
 });
 </script>
+
+<style>
+    .form-check-input:checked {
+        background-color: #16A6A1;
+        border-color: #16A6A1;
+    }
+
+    .form-check-input:focus {
+        border-color: #16A6A1;
+        box-shadow: 0 0 0 0.2rem rgba(22, 166, 161, 0.25);
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #16A6A1;
+        box-shadow: 0 0 0 0.2rem rgba(22, 166, 161, 0.25);
+    }
+
+    .btn-warning {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #000;
+    }
+
+    .btn-warning:hover {
+        background-color: #e0a800;
+        border-color: #e0a800;
+        color: #000;
+    }
+
+    .alert-info {
+        background-color: #e3f2fd;
+        border-color: #90caf9;
+        color: #1565c0;
+    }
+</style>

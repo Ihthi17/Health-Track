@@ -1,0 +1,137 @@
+@model ManageAssignmentsViewModel
+
+@{
+    ViewData["Title"] = "Trainer Assignments";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<!-- <div class="superadmin-header">
+    <h2>Trainer Assignments Management</h2>
+    <p class="text-muted">Manage client-to-trainer assignments</p>
+</div> -->
+
+<div class="container-fluid mt-4">
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-left-teal shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-teal text-uppercase mb-1">Active Trainers</div>
+                    <div class="h3 mb-0">@Model.AvailableTrainers.Count</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-left-accent shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-accent text-uppercase mb-1">Total Assignments</div>
+                    <div class="h3 mb-0">@Model.TotalActiveAssignments</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Client Form -->
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-teal text-white">
+            <h6 class="mb-0"><i class="fas fa-plus me-2"></i> Assign Client to Trainer</h6>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/superadmin/trainer-assignments/assign" class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label">Select Trainer</label>
+                    <select name="trainerId" class="form-select" required>
+                        <option value="">-- Choose Trainer --</option>
+                        @foreach (var trainer in Model.AvailableTrainers)
+                        {
+                            <option value="@trainer.TrainerProfileID">
+                                @(trainer.User?.FirstName) @(trainer.User?.LastName) (@(trainer.User?.Email))
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Select Client</label>
+                    <select name="clientId" class="form-select" required>
+                        <option value="">-- Choose Client --</option>
+                        @foreach (var client in Model.AvailableClients)
+                        {
+                            <option value="@client.ClientProfileID">
+                                @(client.User?.FirstName) @(client.User?.LastName) (@(client.User?.Email))
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-teal w-100">
+                        <i class="fas fa-check me-2"></i> Assign
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Current Assignments Table -->
+    <div class="card shadow">
+        <div class="card-header bg-accent text-white">
+            <h6 class="mb-0"><i class="fas fa-list me-2"></i> Current Assignments</h6>
+        </div>
+        <div class="card-body">
+            @if (Model.CurrentAssignments.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Trainer Name</th>
+                                <th>Trainer Email</th>
+                                <th>Client Name</th>
+                                <th>Client Email</th>
+                                <th>Assigned Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var assignment in Model.CurrentAssignments)
+                            {
+                                <tr>
+                                    <td><strong>@assignment.TrainerName</strong></td>
+                                    <td>@assignment.TrainerEmail</td>
+                                    <td><strong>@assignment.ClientName</strong></td>
+                                    <td>@assignment.ClientEmail</td>
+                                    <td>@assignment.AssignedDate.ToString("MMM dd, yyyy")</td>
+                                    <td>
+                                        <span class="badge bg-accent">@assignment.Status</span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger" title="Remove Assignment">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> No assignments found.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-teal { background-color: #123B4A !important; }
+    .bg-accent { background-color: #16A6A1 !important; }
+    .btn-teal { background-color: #123B4A; border-color: #123B4A; color: white; }
+    .btn-teal:hover { background-color: #0d2835; border-color: #0d2835; color: white; }
+    .border-left-teal { border-left: 0.25rem solid #123B4A !important; }
+    .border-left-accent { border-left: 0.25rem solid #16A6A1 !important; }
+    .text-teal { color: #123B4A !important; }
+    .text-accent { color: #16A6A1 !important; }
+</style>

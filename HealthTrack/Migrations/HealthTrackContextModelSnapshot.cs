@@ -154,12 +154,12 @@ namespace HealthTrack.Migrations
 
                     b.Property<string>("BackupFileName")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("BackupPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("BackupType")
                         .IsRequired()
@@ -173,7 +173,7 @@ namespace HealthTrack.Migrations
                     b.Property<DateTime?>("RestoredDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<long>("Size")
+                    b.Property<long?>("Size")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Status")
@@ -183,7 +183,7 @@ namespace HealthTrack.Migrations
 
                     b.HasKey("BackupLogID");
 
-                    b.ToTable("BackupLogs", (string)null);
+                    b.ToTable("BackupLogs");
                 });
 
             modelBuilder.Entity("HealthTrack.Models.ClientProfile", b =>
@@ -260,35 +260,35 @@ namespace HealthTrack.Migrations
 
                     b.Property<string>("FromEmail")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("FromName")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("SMTPPassword")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<int>("SMTPPort")
                         .HasColumnType("int");
 
                     b.Property<string>("SMTPServer")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("SMTPUsername")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("EmailSettingsID");
 
-                    b.ToTable("EmailSettings", (string)null);
+                    b.ToTable("EmailSettings");
                 });
 
             modelBuilder.Entity("HealthTrack.Models.Notification", b =>
@@ -349,12 +349,11 @@ namespace HealthTrack.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PermissionID"));
 
                     b.Property<string>("Description")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Module")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("PermissionName")
                         .IsRequired()
@@ -363,7 +362,7 @@ namespace HealthTrack.Migrations
 
                     b.HasKey("PermissionID");
 
-                    b.ToTable("Permissions", (string)null);
+                    b.ToTable("Permissions");
                 });
 
             modelBuilder.Entity("HealthTrack.Models.Role", b =>
@@ -387,57 +386,40 @@ namespace HealthTrack.Migrations
                     b.HasIndex("RoleName")
                         .IsUnique();
 
-                    b.ToTable("Roles", (string)null);
+                    b.ToTable("Roles");
                 });
 
             modelBuilder.Entity("HealthTrack.Models.SystemSettings", b =>
                 {
-                    b.Property<int>("SystemSettingsID")
+                    b.Property<int>("SettingID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SystemSettingsID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SettingID"));
 
-                    b.Property<bool>("AutoBackupEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("BackupDayOfWeek")
-                        .HasColumnType("int");
-
-                    b.Property<string>("BackupFrequency")
+                    b.Property<string>("DataType")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int>("BackupRetentionCount")
-                        .HasColumnType("int");
-
-                    b.Property<TimeSpan?>("BackupTime")
-                        .HasColumnType("time");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("LastAutoBackupAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("MaintenanceMode")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("SystemLogo")
+                    b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("SystemName")
+                    b.Property<string>("SettingKey")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SettingValue")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("SystemSettingsID");
+                    b.HasKey("SettingID");
 
-                    b.ToTable("SystemSettings", (string)null);
+                    b.ToTable("SystemSettings");
                 });
 
             modelBuilder.Entity("HealthTrack.Models.TrainerProfile", b =>
@@ -538,7 +520,7 @@ namespace HealthTrack.Migrations
 
                     b.HasIndex("RoleID");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("PermissionRole", b =>

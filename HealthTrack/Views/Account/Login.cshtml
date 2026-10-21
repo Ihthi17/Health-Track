@@ -1,46 +1,66 @@
 @model HealthTrack.Models.LoginViewModel
 @{
-    ViewData["Title"] = "Sign in";
+    ViewData["Title"] = "Sign In";
     Layout = "~/Views/Shared/_AuthLayout.cshtml";
 }
 
 <div class="mb-3 text-center">
-    <h4>Sign in to your account</h4>
-    <p class="text-muted small">Enter your email or username and password</p>
+    <h5 style="color: #2D3E47; font-weight: 700; margin-bottom: 8px;">Sign in to your account</h5>
+    <p class="text-muted small" style="margin: 0;">Enter your email and password to access HealthTrack</p>
 </div>
 
+@if (ViewData.ModelState.Keys.Any(k => ViewData.ModelState[k].Errors.Count > 0))
+{
+    <div class="alert alert-danger">
+        <div asp-validation-summary="ModelOnly"></div>
+    </div>
+}
+
 <form asp-action="Login" method="post" novalidate>
-    <div asp-validation-summary="ModelOnly" class="text-danger validation-summary-errors"></div>
+    @if (ViewData["ReturnUrl"] != null)
+    {
+        <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+    }
 
     <div class="mb-3">
-        <label asp-for="EmailOrUsername" class="form-label"></label>
-        <input asp-for="EmailOrUsername" class="form-control" />
+        <label asp-for="EmailOrUsername" class="form-label">
+            <i class="fas fa-envelope me-2" style="color: #16A6A1;"></i>Email Address
+        </label>
+        <input asp-for="EmailOrUsername" class="form-control" placeholder="your@email.com" required />
         <span asp-validation-for="EmailOrUsername" class="text-danger"></span>
     </div>
 
-    <div class="mb-3 position-relative">
-        <label asp-for="Password" class="form-label"></label>
+    <div class="mb-3">
+        <label asp-for="Password" class="form-label">
+            <i class="fas fa-lock me-2" style="color: #16A6A1;"></i>Password
+        </label>
         <div class="input-group">
-            <input asp-for="Password" class="form-control" id="passwordInput" />
-            <button type="button" class="btn btn-outline-secondary password-toggle" id="togglePassword" aria-label="Toggle password visibility">
-                Show
+            <input asp-for="Password" class="form-control" id="passwordInput" placeholder="Enter your password" required />
+            <button type="button" class="btn btn-outline-secondary" id="togglePassword" aria-label="Toggle password visibility">
+                <i class="fas fa-eye"></i>
             </button>
         </div>
         <span asp-validation-for="Password" class="text-danger"></span>
     </div>
 
     <div class="mb-3 form-check">
-        <input asp-for="RememberMe" class="form-check-input" />
-        <label asp-for="RememberMe" class="form-check-label"></label>
+        <input asp-for="RememberMe" class="form-check-input" id="rememberCheck" />
+        <label asp-for="RememberMe" class="form-check-label" for="rememberCheck">
+            Keep me signed in on this device
+        </label>
     </div>
 
-    <div class="d-grid mb-2">
-        <button type="submit" class="btn btn-accent">Sign in</button>
-    </div>
+    <button type="submit" class="btn-primary-auth" style="margin-bottom: 12px;">
+        <i class="fas fa-sign-in-alt me-2"></i> Sign In
+    </button>
 
-    <div class="d-flex justify-content-between small">
-        <a asp-action="ForgotPassword">Forgot password?</a>
-        <a asp-action="Register">Create an account</a>
+    <div class="auth-links">
+        <a asp-action="ForgotPassword">
+            <i class="fas fa-key me-1"></i> Forgot password?
+        </a>
+        <a asp-action="Register">
+            <i class="fas fa-user-plus me-1"></i> Create account
+        </a>
     </div>
 </form>
 
@@ -52,9 +72,16 @@
             const pwd = document.getElementById('passwordInput');
             const btn = document.getElementById('togglePassword');
             if(!pwd || !btn) return;
-            btn.addEventListener('click', function(){
-                if(pwd.type === 'password'){ pwd.type = 'text'; btn.textContent = 'Hide'; }
-                else { pwd.type = 'password'; btn.textContent = 'Show'; }
+            btn.addEventListener('click', function(e){
+                e.preventDefault();
+                if(pwd.type === 'password'){ 
+                    pwd.type = 'text'; 
+                    btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                }
+                else { 
+                    pwd.type = 'password'; 
+                    btn.innerHTML = '<i class="fas fa-eye"></i>';
+                }
                 pwd.focus();
             });
         })();

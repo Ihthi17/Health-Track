@@ -1,0 +1,224 @@
+@{
+    ViewData["Title"] = "Workout Plans";
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">Workout Plans</h1>
+            <p class="text-muted">Create and manage workout plans for your clients</p>
+        </div>
+        <div>
+            <a href="#" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createWorkoutModal">
+                <i class="fas fa-plus me-2"></i> New Workout Plan
+            </a>
+            <a href="/trainer" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Workout Plans Grid -->
+    <div class="row">
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-light border-0">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">Full Body Strength</h6>
+                            <small class="text-muted">For: John Doe</small>
+                        </div>
+                        <span class="badge bg-success">Active</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Duration:</strong> 4 weeks</p>
+                    <p class="mb-2"><strong>Sessions/Week:</strong> 3</p>
+                    <p class="mb-3"><strong>Focus:</strong> Strength & Muscle Building</p>
+                    <div class="mb-3">
+                        <p class="small text-muted mb-2">Exercises:</p>
+                        <div class="list-group list-group-sm">
+                            <small class="list-group-item border-0 px-0 py-1">
+                                <i class="fas fa-check text-success me-2"></i> Bench Press - 4x5
+                            </small>
+                            <small class="list-group-item border-0 px-0 py-1">
+                                <i class="fas fa-check text-success me-2"></i> Squats - 4x5
+                            </small>
+                            <small class="list-group-item border-0 px-0 py-1">
+                                <i class="fas fa-check text-success me-2"></i> Deadlifts - 3x3
+                            </small>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit me-1"></i> Edit Plan
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-trash me-1"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-light border-0">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">Weight Loss Program</h6>
+                            <small class="text-muted">For: Jane Smith</small>
+                        </div>
+                        <span class="badge bg-success">Active</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Duration:</strong> 8 weeks</p>
+                    <p class="mb-2"><strong>Sessions/Week:</strong> 5</p>
+                    <p class="mb-3"><strong>Focus:</strong> Cardio & Fat Loss</p>
+                    <div class="mb-3">
+                        <p class="small text-muted mb-2">Exercises:</p>
+                        <div class="list-group list-group-sm">
+                            <small class="list-group-item border-0 px-0 py-1">
+                                <i class="fas fa-check text-success me-2"></i> HIIT Training - 30min
+                            </small>
+                            <small class="list-group-item border-0 px-0 py-1">
+                                <i class="fas fa-check text-success me-2"></i> Circuit Training - 45min
+                            </small>
+                            <small class="list-group-item border-0 px-0 py-1">
+                                <i class="fas fa-check text-success me-2"></i> Treadmill - 20min
+                            </small>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit me-1"></i> Edit Plan
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-trash me-1"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-light border-0">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">Core & Flexibility</h6>
+                            <small class="text-muted">For: Mike Johnson</small>
+                        </div>
+                        <span class="badge bg-warning">Inactive</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Duration:</strong> 6 weeks</p>
+                    <p class="mb-2"><strong>Sessions/Week:</strong> 3</p>
+                    <p class="mb-3"><strong>Focus:</strong> Core Strength & Balance</p>
+                    <div class="mb-3">
+                        <p class="small text-muted mb-2">Exercises:</p>
+                        <div class="list-group list-group-sm">
+                            <small class="list-group-item border-0 px-0 py-1">
+                                <i class="fas fa-check text-success me-2"></i> Planks - 3x60s
+                            </small>
+                            <small class="list-group-item border-0 px-0 py-1">
+                                <i class="fas fa-check text-success me-2"></i> Yoga - 45min
+                            </small>
+                            <small class="list-group-item border-0 px-0 py-1">
+                                <i class="fas fa-check text-success me-2"></i> Balance Training
+                            </small>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit me-1"></i> Edit Plan
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-trash me-1"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Workout Modal -->
+    <div class="modal fade" id="createWorkoutModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content border-0">
+                <div class="modal-header bg-light border-0">
+                    <h5 class="modal-title">
+                        <i class="fas fa-dumbbell me-2"></i> Create New Workout Plan
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">Client</label>
+                            <select class="form-select">
+                                <option>Select a client...</option>
+                                <option>John Doe</option>
+                                <option>Jane Smith</option>
+                                <option>Mike Johnson</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Plan Name</label>
+                            <input type="text" class="form-control" placeholder="e.g., Full Body Strength">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Duration (weeks)</label>
+                                <input type="number" class="form-control" placeholder="4" min="1">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Sessions per week</label>
+                                <input type="number" class="form-control" placeholder="3" min="1" max="7">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Focus Area</label>
+                            <select class="form-select">
+                                <option>Select focus...</option>
+                                <option>Strength & Muscle Building</option>
+                                <option>Cardio & Fat Loss</option>
+                                <option>Core Strength & Balance</option>
+                                <option>Flexibility & Mobility</option>
+                                <option>Mixed/General Fitness</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="3" placeholder="Add workout details..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0 bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Create Plan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .list-group-item {
+        background-color: transparent;
+    }
+</style>

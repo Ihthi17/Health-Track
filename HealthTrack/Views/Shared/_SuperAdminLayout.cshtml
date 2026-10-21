@@ -24,7 +24,7 @@
 
     .superadmin-sidebar {
         width: 250px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #123B4A 0%, #1a5a73 100%);
         color: white;
         padding: 20px 0;
         position: fixed;
@@ -128,7 +128,7 @@
         margin-left: 250px;
         padding: 30px;
         flex: 1;
-        background-color: #f5f5f5;
+        background-color: #F3F7F8;
         transition: all 0.3s ease;
     }
 
@@ -165,14 +165,14 @@
         border: none;
         font-size: 20px;
         cursor: pointer;
-        color: #667eea;
+        color: #123B4A;
         padding: 8px;
         display: none;
         transition: color 0.3s ease;
     }
 
     .toggle-sidebar-btn:hover {
-        color: #5568d3;
+        color: #16A6A1;
     }
 
     .superadmin-header .user-info {
@@ -220,8 +220,8 @@
     }
 
     .user-menu-dropdown a:hover {
-        background-color: #f5f5f5;
-        color: #667eea;
+        background-color: #F3F7F8;
+        color: #16A6A1;
     }
 
     .user-menu-dropdown a.logout {
@@ -242,8 +242,8 @@
     }
 
     .user-menu-dropdown-btn:hover {
-        background-color: #f5f5f5;
-        color: #667eea;
+        background-color: #F3F7F8;
+        color: #16A6A1;
     }
 
     .user-menu-dropdown-btn.logout {
@@ -312,7 +312,7 @@
         background: none;
         border: none;
         font-size: 20px;
-        color: #667eea;
+        color: #16A6A1;
         cursor: pointer;
         padding: 0;
         position: relative;
@@ -320,7 +320,7 @@
     }
 
     .notification-bell:hover {
-        color: #5568d3;
+        color: #16A6A1;
     }
 
     .notification-badge {
@@ -454,6 +454,21 @@
                     <span>Appointments</span>
                 </a></li>
 
+                <li><a href="/superadmin/trainer-assignments" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "TrainerAssignments" ? "active" : "")">
+                    <i class="fas fa-sitemap"></i>
+                    <span>Trainer Assignments</span>
+                </a></li>
+
+                <li><a href="/superadmin/reports" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "Reports" ? "active" : "")">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reports & Analytics</span>
+                </a></li>
+
+                <li><a href="/superadmin/activation-security" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "ActivationSecurity" ? "active" : "")">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Activation & Security</span>
+                </a></li>
+
                 <li class="menu-section">
                     <div class="menu-section-title">System</div>
                 </li>
@@ -499,7 +514,7 @@
                         <div class="notification-dropdown" id="notificationDropdown">
                             <div class="notification-dropdown-header">
                                 <h6>Notifications</h6>
-                                <button class="btn-clear" id="markAllReadBtn" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 12px;">Mark all as read</button>
+                                <button class="btn-clear" id="markAllReadBtn" style="background: none; border: none; color: #16A6A1; cursor: pointer; font-size: 12px;">Mark all as read</button>
                             </div>
                             <div class="notification-dropdown-list" id="notificationList">
                                 <p class="text-muted text-center small">Loading notifications...</p>
@@ -508,7 +523,7 @@
                     </div>
 
                     <div class="user-menu" id="userMenu">
-                        <span><i class="fas fa-user-circle" style="font-size: 24px; color: #667eea;"></i></span>
+                        <span><i class="fas fa-user-circle" style="font-size: 24px; color: #16A6A1;"></i></span>
                         <span>@User.Identity?.Name</span>
                         <i class="fas fa-chevron-down" style="font-size: 12px;"></i>
                         
@@ -675,3 +690,4 @@
         window.addEventListener('load', loadNotifications);
     </script>
 </body>
+

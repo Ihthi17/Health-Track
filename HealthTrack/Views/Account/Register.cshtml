@@ -1,58 +1,73 @@
 @model HealthTrack.Models.RegisterViewModel
 @{
-    ViewData["Title"] = "Create account";
+    ViewData["Title"] = "Create Account";
     Layout = "~/Views/Shared/_AuthLayout.cshtml";
 }
 
 <div class="mb-3 text-center">
-    <h4>Create your account</h4>
-    <p class="text-muted small">For professionals and patients — secure access to HealthTrack</p>
+    <h5 style="color: #2D3E47; font-weight: 700; margin-bottom: 8px;">Create your account</h5>
+    <p class="text-muted small" style="margin: 0;">For professionals and patients — secure access to HealthTrack</p>
 </div>
 
 <form asp-action="Register" method="post" novalidate>
     <div asp-validation-summary="ModelOnly" class="text-danger validation-summary-errors"></div>
 
     <div class="mb-3">
-        <label asp-for="FullName" class="form-label"></label>
-        <input asp-for="FullName" class="form-control" />
+        <label asp-for="FullName" class="form-label">
+            <i class="fas fa-user me-2" style="color: #16A6A1;"></i>Full Name
+        </label>
+        <input asp-for="FullName" class="form-control" placeholder="John Doe" required />
         <span asp-validation-for="FullName" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label asp-for="Email" class="form-label"></label>
-        <input asp-for="Email" class="form-control" />
+        <label asp-for="Email" class="form-label">
+            <i class="fas fa-envelope me-2" style="color: #16A6A1;"></i>Email Address
+        </label>
+        <input asp-for="Email" class="form-control" placeholder="your@email.com" type="email" required />
         <span asp-validation-for="Email" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label asp-for="PhoneNumber" class="form-label"></label>
-        <input asp-for="PhoneNumber" class="form-control" />
+        <label asp-for="PhoneNumber" class="form-label">
+            <i class="fas fa-phone me-2" style="color: #16A6A1;"></i>Phone Number
+        </label>
+        <input asp-for="PhoneNumber" class="form-control" placeholder="+1 (555) 000-0000" />
         <span asp-validation-for="PhoneNumber" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label asp-for="Password" class="form-label"></label>
-        <input asp-for="Password" class="form-control" />
+        <label asp-for="Password" class="form-label">
+            <i class="fas fa-lock me-2" style="color: #16A6A1;"></i>Password
+        </label>
+        <input asp-for="Password" class="form-control" placeholder="At least 8 characters" type="password" required />
+        <small class="text-muted d-block mt-1">Must contain letters, numbers, and special characters</small>
         <span asp-validation-for="Password" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label asp-for="ConfirmPassword" class="form-label"></label>
-        <input asp-for="ConfirmPassword" class="form-control" />
+        <label asp-for="ConfirmPassword" class="form-label">
+            <i class="fas fa-check-circle me-2" style="color: #16A6A1;"></i>Confirm Password
+        </label>
+        <input asp-for="ConfirmPassword" class="form-control" placeholder="Confirm your password" type="password" required />
         <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
     </div>
 
     <div class="mb-3 form-check">
-        <input asp-for="Consent" class="form-check-input" />
-        <label asp-for="Consent" class="form-check-label"></label>
+        <input asp-for="Consent" class="form-check-input" id="consentCheck" />
+        <label asp-for="Consent" class="form-check-label" for="consentCheck">
+            I agree to the <a href="/Home/Privacy" style="color: #16A6A1; text-decoration: none;">terms and privacy policy</a>
+        </label>
+        <span asp-validation-for="Consent" class="text-danger"></span>
     </div>
 
-    <div class="d-grid mb-2">
-        <button type="submit" class="btn btn-accent">Create account</button>
-    </div>
+    <button type="submit" class="btn-primary-auth" style="margin-bottom: 12px;">
+        <i class="fas fa-user-plus me-2"></i> Create Account
+    </button>
 
-    <div class="text-center small">
-        <a asp-action="Login">Already have an account? Sign in</a>
+    <div class="auth-links">
+        <span style="color: #6B7F89;">Already have an account?</span>
+        <a asp-action="Login">Sign in here</a>
     </div>
 </form>
 

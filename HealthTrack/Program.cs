@@ -14,6 +14,7 @@ builder.Services.AddScoped<IPasswordResetTokenService, PasswordResetTokenService
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IBackupService, BackupService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<SystemSettingsService>();
 
 // Cookie authentication
 builder.Services

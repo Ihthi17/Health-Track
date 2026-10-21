@@ -1,0 +1,221 @@
+@model TrainerDashboardViewModel
+
+@{
+    ViewData["Title"] = "Trainer Dashboard";
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h1 class="h3 d-inline-block me-3">Trainer Dashboard</h1>
+        <p class="text-muted">Manage your clients, appointments, and workouts</p>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> <strong>Error:</strong> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Statistics Row -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 p-3 rounded-3">
+                                <i class="fas fa-users fa-2x text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Assigned Clients</h6>
+                            <h3 class="mb-0">@Model.AssignedClientsCount</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 p-3 rounded-3">
+                                <i class="fas fa-calendar-check fa-2x text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Total Appointments</h6>
+                            <h3 class="mb-0">@Model.TotalAppointments</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 p-3 rounded-3">
+                                <i class="fas fa-clock fa-2x text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Upcoming</h6>
+                            <h3 class="mb-0">@Model.UpcomingAppointments.Count</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-info bg-opacity-10 p-3 rounded-3">
+                                <i class="fas fa-dumbbell fa-2x text-info"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Quick Actions</h6>
+                            <a href="/trainer/clients" class="btn btn-sm btn-outline-info">View Clients</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Upcoming Appointments -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i> Upcoming Appointments</h5>
+                        <a href="/trainer/appointments" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.UpcomingAppointments.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Client Name</th>
+                                        <th>Date & Time</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var apt in Model.UpcomingAppointments)
+                                    {
+                                        var statusBadge = apt.Status switch
+                                        {
+                                            "Pending" => "warning",
+                                            "Approved" => "success",
+                                            "Completed" => "info",
+                                            "Cancelled" => "danger",
+                                            _ => "secondary"
+                                        };
+                                        <tr>
+                                            <td>
+                                                <strong>@(apt.Client?.User?.FirstName ?? "") @(apt.Client?.User?.LastName ?? "")</strong>
+                                            </td>
+                                            <td>
+                                                @apt.StartTime.ToString("MMM dd, HH:mm")
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-@statusBadge">@apt.Status</span>
+                                            </td>
+                                            <td>
+                                                <a href="/trainer/appointments/@apt.AppointmentID" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No upcoming appointments scheduled.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0"><i class="fas fa-link me-2"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/trainer/clients" class="btn btn-outline-primary btn-sm text-start">
+                            <i class="fas fa-users me-2"></i> My Clients
+                        </a>
+                        <a href="/trainer/workouts" class="btn btn-outline-primary btn-sm text-start">
+                            <i class="fas fa-dumbbell me-2"></i> Workout Plans
+                        </a>
+                        <a href="/trainer/diets" class="btn btn-outline-primary btn-sm text-start">
+                            <i class="fas fa-apple-alt me-2"></i> Diet Plans
+                        </a>
+                        <a href="/trainer/appointments" class="btn btn-outline-primary btn-sm text-start">
+                            <i class="fas fa-calendar-check me-2"></i> All Appointments
+                        </a>
+                        <a href="/trainer/progress" class="btn btn-outline-primary btn-sm text-start">
+                            <i class="fas fa-chart-line me-2"></i> Client Progress
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i> Recent Activity</h5>
+                </div>
+                <div class="card-body small">
+                    <p class="text-muted mb-0">Latest updates from your clients will appear here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: box-shadow 0.3s ease-in-out;
+    }
+
+    .card:hover {
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .bg-opacity-10 {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .rounded-3 {
+        border-radius: 0.75rem;
+    }
+</style>
