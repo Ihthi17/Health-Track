@@ -1,0 +1,241 @@
+@model AnalyticsReport
+
+@{
+    // Shared by the trainer and admin reports - the controller chooses the layout
+    ViewData["Title"] = "Reports & Analytics";
+    Layout = ViewData["Layout"] as string ?? "~/Views/Shared/_TrainerLayout.cshtml";
+
+    string scope = ViewData["Scope"] as string ?? "your clients";
+    string exportUrl = ViewData["ExportUrl"] as string ?? "#";
+    string baseUrl = ViewData["BaseUrl"] as string ?? "";
+    bool showTrainer = ViewData["ShowTrainer"] as bool? ?? false;
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 mb-1">Reports &amp; Analytics</h1>
+            <p class="text-muted mb-0">Popular routines and engagement for @scope · @Model.From.ToString("dd MMM") – @Model.To.ToString("dd MMM yyyy")</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <form method="get" action="@baseUrl">
+                <select name="days" class="form-select" onchange="this.form.submit()" aria-label="Time period">
+                    <option value="7" selected="@(Model.Days == 7)">Last 7 days</option>
+                    <option value="30" selected="@(Model.Days == 30)">Last 30 days</option>
+                    <option value="90" selected="@(Model.Days == 90)">Last 90 days</option>
+                </select>
+            </form>
+            <a href="@exportUrl" class="btn btn-primary text-nowrap"><i class="fas fa-file-csv me-1"></i> Export CSV</a>
+        </div>
+    </div>
+
+    <!-- ===== Engagement summary ===== -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <h6 class="text-muted">Client Engagement</h6>
+                <h3 class="text-primary">@Model.EngagementPercent%</h3>
+                <small class="text-muted">@Model.ActiveClients of @Model.TotalClients clients active in the last 7 days</small>
+            </div></div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <h6 class="text-muted">Workouts Logged</h6>
+                <h3 class="text-success">@Model.WorkoutsLogged</h3>
+                <small class="text-muted">@Model.AverageWorkoutsPerClient per client · @Model.CaloriesBurned.ToString("0") kcal burned</small>
+            </div></div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <h6 class="text-muted">Meals &amp; Measurements</h6>
+                <h3 class="text-warning">@Model.MealsLogged / @Model.MeasurementsLogged</h3>
+                <small class="text-muted">Meals logged / health measurements</small>
+            </div></div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <h6 class="text-muted">Plan Completion</h6>
+                <h3 class="text-info">@(Model.AveragePlanCompletion.HasValue ? Model.AveragePlanCompletion + "%" : "–")</h3>
+                <small class="text-muted">Average across active workout plans</small>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- ===== Daily activity chart ===== -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i> Daily Activity</h5></div>
+                <div class="card-body"><canvas id="activityChart" height="130"></canvas></div>
+            </div>
+        </div>
+
+        <!-- ===== Active vs inactive ===== -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-user-check me-2"></i> Active vs Inactive</h5></div>
+                <div class="card-body">
+                    @if (Model.TotalClients == 0)
+                    {
+                        <p class="text-muted mb-0">No clients yet.</p>
+                    }
+                    else
+                    {
+                        <canvas id="engagementChart" height="200"></canvas>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- ===== Most popular exercises (logged) ===== -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-fire me-2"></i> Most Popular Exercises</h5></div>
+                <div class="card-body p-0">
+                    @if (Model.PopularExercises.Count == 0)
+                    {
+                        <p class="text-muted p-3 mb-0">No workouts logged in this period.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr><th>#</th><th>Exercise</th><th>Times logged</th><th>Minutes</th><th>kcal</th><th>Clients</th></tr>
+                            </thead>
+                            <tbody>
+                                @{ int rank = 1; }
+                                @foreach (var e in Model.PopularExercises)
+                                {
+                                    <tr>
+                                        <td>@(rank++)</td>
+                                        <td>@e.ExerciseName <small class="text-muted">@e.Category</small></td>
+                                        <td><strong>@e.TimesLogged</strong></td>
+                                        <td>@e.TotalMinutes</td>
+                                        <td>@e.TotalCalories.ToString("0")</td>
+                                        <td>@e.ClientCount</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Most planned exercises ===== -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i> Most Planned Exercises</h5></div>
+                <div class="card-body p-0">
+                    @if (Model.MostPlannedExercises.Count == 0)
+                    {
+                        <p class="text-muted p-3 mb-0">No active workout plans.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr><th>Exercise</th><th>In plans</th><th>Clients</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var e in Model.MostPlannedExercises)
+                                {
+                                    <tr>
+                                        <td>@e.ExerciseName <small class="text-muted">@e.Category</small></td>
+                                        <td>@e.TimesLogged</td>
+                                        <td>@e.ClientCount</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Workout plan usage ===== -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header"><h5 class="mb-0"><i class="fas fa-tasks me-2"></i> Workout Plan Completion</h5></div>
+        <div class="card-body p-0">
+            @if (Model.Plans.Count == 0)
+            {
+                <p class="text-muted p-3 mb-0">No workout plans yet.</p>
+            }
+            else
+            {
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Plan</th><th>Client</th>
+                            @if (showTrainer) { <th>Trainer</th> }
+                            <th>Status</th><th>Done / Scheduled</th><th style="min-width: 150px;">Completion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Plans)
+                        {
+                            var pct = p.CompletionPercent;
+                            var bar = pct >= 80 ? "bg-success" : pct >= 50 ? "bg-warning" : "bg-danger";
+                            <tr>
+                                <td><strong>@p.PlanName</strong></td>
+                                <td>@p.ClientName</td>
+                                @if (showTrainer) { <td>@p.TrainerName</td> }
+                                <td><span class="badge @(p.IsActive ? "bg-success" : "bg-secondary")">@(p.IsActive ? "Active" : "Inactive")</span></td>
+                                <td>@p.Done / @p.Scheduled</td>
+                                <td>
+                                    @if (pct.HasValue)
+                                    {
+                                        <div class="progress" style="height: 18px;">
+                                            <div class="progress-bar @bar" style="width: @pct%;">@pct%</div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">Nothing scheduled yet</small>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+@if (ViewData["LoadChartJs"] as bool? == true)
+{
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+}
+<script>
+    // Chart.js is loaded at the end of the layout (or just above), so wait until the page has loaded
+    document.addEventListener('DOMContentLoaded', function () {
+        new Chart(document.getElementById('activityChart'), {
+            type: 'bar',
+            data: {
+                labels: @Json.Serialize(Model.DailyActivity.Select(d => d.Day.ToString("dd MMM"))),
+                datasets: [
+                    { label: 'Workouts', data: @Json.Serialize(Model.DailyActivity.Select(d => d.Workouts)), backgroundColor: '#16A6A1' },
+                    { label: 'Meals', data: @Json.Serialize(Model.DailyActivity.Select(d => d.Meals)), backgroundColor: '#F0A93B' },
+                    { label: 'Measurements', data: @Json.Serialize(Model.DailyActivity.Select(d => d.Measurements)), backgroundColor: '#123B4A' }
+                ]
+            },
+            options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+
+        var engagementCanvas = document.getElementById('engagementChart');
+        if (engagementCanvas) {
+            new Chart(engagementCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Active (last 7 days)', 'Inactive'],
+                    datasets: [{ data: [@Model.ActiveClients, @Model.InactiveClients], backgroundColor: ['#16A6A1', '#D9E2E6'] }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+    });
+</script>

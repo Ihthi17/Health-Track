@@ -1,0 +1,198 @@
+@model ClientAppointmentsViewModel
+
+@{
+    ViewData["Title"] = "Appointments";
+    Layout = "~/Views/Shared/_ClientLayout.cshtml";
+
+    // Colour for each status badge
+    Func<string, string> StatusBadge = status => status switch
+    {
+        "Approved"  => "bg-success",
+        "Pending"   => "bg-warning",
+        "Completed" => "bg-info",
+        "Cancelled" => "bg-secondary",
+        "Rejected"  => "bg-danger",
+        _           => "bg-secondary"
+    };
+
+    Func<int, string> TrainerName = id =>
+        Model.TrainerNames.TryGetValue(id, out var name) ? name : "Trainer";
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">Appointments</h1>
+    <p class="text-muted mb-0">Book a consultation with a trainer. Your trainer will approve, change or decline the request.</p>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success"><i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-1"></i> @TempData["ErrorMessage"]</div>
+}
+
+<div class="row g-3 mb-4">
+    <!-- ===== Booking form ===== -->
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header"><h5><i class="fas fa-calendar-plus me-1"></i> Book an Appointment</h5></div>
+            <div class="card-body">
+                @if (Model.Trainers.Count == 0)
+                {
+                    <p class="text-muted mb-0">There are no active trainers available to book right now.</p>
+                }
+                else
+                {
+                    <form asp-action="BookAppointment" method="post" novalidate>
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+
+                        <div class="mb-2">
+                            <label asp-for="NewAppointment.TrainerID" class="form-label"></label>
+                            <select asp-for="NewAppointment.TrainerID" class="form-select">
+                                <option value="">-- Choose a trainer --</option>
+                                @foreach (var t in Model.Trainers)
+                                {
+                                    var label = t.Name
+                                        + (string.IsNullOrEmpty(t.Specialization) ? "" : $" ({t.Specialization})")
+                                        + (t.TrainerID == Model.AssignedTrainerID ? " – your trainer" : "");
+                                    <option value="@t.TrainerID">@label</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label asp-for="NewAppointment.Date" class="form-label"></label>
+                                <input asp-for="NewAppointment.Date" type="date" class="form-control"
+                                       min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                       max="@DateTime.Today.AddMonths(3).ToString("yyyy-MM-dd")" />
+                            </div>
+                            <div class="col-6">
+                                <label asp-for="NewAppointment.StartTime" class="form-label"></label>
+                                <input asp-for="NewAppointment.StartTime" type="time" class="form-control"
+                                       min="06:00" max="20:30" step="900" />
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label asp-for="NewAppointment.DurationMin" class="form-label"></label>
+                            <select asp-for="NewAppointment.DurationMin" class="form-select">
+                                @foreach (var minutes in AppointmentInput.Durations)
+                                {
+                                    <option value="@minutes">@minutes minutes</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="NewAppointment.Reason" class="form-label"></label>
+                            <textarea asp-for="NewAppointment.Reason" class="form-control" rows="3" maxlength="500"
+                                      placeholder="e.g. Review my progress and adjust my workout plan"></textarea>
+                        </div>
+
+                        <p class="small text-muted"><i class="fas fa-info-circle"></i> Sessions run between 06:00 and 21:00 and must be booked at least 1 hour ahead.</p>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-paper-plane me-1"></i> Request Appointment
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Upcoming appointments ===== -->
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header"><h5><i class="fas fa-calendar-check me-1"></i> Upcoming</h5></div>
+            <div class="card-body">
+                @if (Model.Upcoming.Count == 0)
+                {
+                    <p class="text-muted mb-0">You have no upcoming appointments.</p>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var a in Model.Upcoming)
+                        {
+                            <li class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="fw-semibold">
+                                            @a.StartTime.ToString("dddd dd MMM yyyy")
+                                        </div>
+                                        <div class="text-muted small">
+                                            <i class="far fa-clock"></i> @a.StartTime.ToString("hh:mm tt") – @a.EndTime.ToString("hh:mm tt")
+                                            · with @(TrainerName(a.TrainerID))
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(a.Reason))
+                                        {
+                                            <div class="small mt-1">@a.Reason</div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(a.TrainerNotes))
+                                        {
+                                            <div class="small mt-1 text-info"><i class="fas fa-comment"></i> Trainer: @a.TrainerNotes</div>
+                                        }
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge @(StatusBadge(a.Status))">@a.Status</span>
+                                        <form asp-action="CancelAppointment" asp-route-id="@a.AppointmentID" method="post" class="mt-2"
+                                              onsubmit="return confirm('Cancel this appointment?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Past / cancelled appointments ===== -->
+<div class="card">
+    <div class="card-header"><h5><i class="fas fa-history me-1"></i> Past &amp; Cancelled</h5></div>
+    <div class="card-body p-0">
+        @if (Model.Past.Count == 0)
+        {
+            <p class="text-muted p-4 mb-0">No past appointments.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Trainer</th>
+                            <th>Reason</th>
+                            <th>Trainer notes</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in Model.Past)
+                        {
+                            <tr>
+                                <td>@a.StartTime.ToString("dd MMM yyyy")</td>
+                                <td>@a.StartTime.ToString("hh:mm tt")</td>
+                                <td>@(TrainerName(a.TrainerID))</td>
+                                <td class="small">@(a.Reason ?? "–")</td>
+                                <td class="small text-muted">@(a.TrainerNotes ?? "–")</td>
+                                <td><span class="badge @(StatusBadge(a.Status))">@a.Status</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

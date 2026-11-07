@@ -1,0 +1,122 @@
+@model ClientDetailViewModel
+
+@{
+    ViewData["Title"] = "Client Details";
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+
+    var c = Model.ClientProfile!;
+    var user = c.User;
+    string name = user != null ? $"{user.FirstName} {user.LastName}" : "Client";
+
+    // Age from date of birth (birthday not reached yet this year -> one less)
+    int? age = null;
+    if (c.DateOfBirth.HasValue)
+    {
+        var dob = c.DateOfBirth.Value.Date;
+        age = DateTime.Today.Year - dob.Year;
+        if (dob > DateTime.Today.AddYears(-age.Value)) age--;
+    }
+
+    var address = string.Join(", ", new[] { c.AddressLine1, c.AddressLine2, c.City, c.StateProvince, c.PostalCode }
+                                        .Where(s => !string.IsNullOrWhiteSpace(s)));
+
+    Func<string, string> StatusBadge = status => status switch
+    {
+        "Approved" => "bg-success",
+        "Pending" => "bg-warning",
+        "Completed" => "bg-info",
+        "Cancelled" => "bg-danger",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 mb-1">@name</h1>
+            <p class="text-muted mb-0">@(user?.Email)</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="/trainer/progress/@c.ClientProfileID" class="btn btn-primary"><i class="fas fa-chart-line me-1"></i> Progress &amp; Feedback</a>
+            <a href="/trainer/workouts?clientId=@c.ClientProfileID" class="btn btn-outline-primary"><i class="fas fa-dumbbell me-1"></i> Workout Plans</a>
+            <a href="/trainer/diets?clientId=@c.ClientProfileID" class="btn btn-outline-primary"><i class="fas fa-apple-alt me-1"></i> Diet Plans</a>
+            <a href="/trainer/clients" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> My Clients</a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- ===== Personal & health details ===== -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-id-card me-2"></i> Client Information</h5></div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-5">Age</dt>
+                        <dd class="col-7">@(age.HasValue ? age + " years" : "–")</dd>
+
+                        <dt class="col-5">Gender</dt>
+                        <dd class="col-7">@(c.Gender ?? "–")</dd>
+
+                        <dt class="col-5">Height</dt>
+                        <dd class="col-7">@(c.HeightCm.HasValue ? c.HeightCm.Value.ToString("0.#") + " cm" : "–")</dd>
+
+                        <dt class="col-5">Phone</dt>
+                        <dd class="col-7">@(c.Phone ?? "–")</dd>
+
+                        <dt class="col-5">Address</dt>
+                        <dd class="col-7">@(string.IsNullOrEmpty(address) ? "–" : address)</dd>
+
+                        <dt class="col-5">Goal</dt>
+                        <dd class="col-7">@(c.GoalDescription ?? "–")</dd>
+                    </dl>
+
+                    <hr />
+                    <h6><i class="fas fa-notes-medical me-1 text-danger"></i> Medical notes</h6>
+                    <p class="mb-0 @(string.IsNullOrEmpty(c.MedicalNotes) ? "text-muted" : "")">
+                        @(c.MedicalNotes ?? "None provided.")
+                    </p>
+                    <p class="small text-muted mt-2 mb-0">
+                        <i class="fas fa-lock"></i> Confidential – only visible to this client's assigned trainer.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Appointments with this trainer ===== -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-calendar me-2"></i> Appointments with You</h5></div>
+                <div class="card-body p-0">
+                    @if (Model.Appointments.Count == 0)
+                    {
+                        <p class="text-muted p-3 mb-0">No appointments with this client yet.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr><th>Date</th><th>Time</th><th>Reason</th><th>Status</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in Model.Appointments)
+                                {
+                                    <tr>
+                                        <td>@a.StartTime.ToString("dd MMM yyyy")</td>
+                                        <td>@a.StartTime.ToString("hh:mm tt")</td>
+                                        <td class="small">@(a.Reason ?? "–")</td>
+                                        <td><span class="badge @(StatusBadge(a.Status))">@a.Status</span></td>
+                                        <td>
+                                            <a href="/trainer/appointments/@a.AppointmentID" class="btn btn-sm btn-outline-primary" title="Manage">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

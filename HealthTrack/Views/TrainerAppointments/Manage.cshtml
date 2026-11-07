@@ -1,0 +1,178 @@
+@model ManageAppointmentViewModel
+
+@{
+    ViewData["Title"] = "Manage Appointment";
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+
+    var a = Model.Appointment;
+    var badge = a.Status switch
+    {
+        "Pending" => "warning",
+        "Approved" => "success",
+        "Completed" => "info",
+        "Cancelled" => "danger",
+        _ => "secondary"
+    };
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">Manage Appointment</h1>
+            <p class="text-muted mb-0">Approve, reschedule or cancel this client's request.</p>
+        </div>
+        <a href="/trainer/appointments" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i> All Appointments
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success"><i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-1"></i> @TempData["ErrorMessage"]</div>
+    }
+
+    <div class="row g-3">
+        <!-- ===== Appointment details ===== -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white"><h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> Details</h5></div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-4">Client</dt>
+                        <dd class="col-8">
+                            @Model.ClientName
+                            @if (!string.IsNullOrEmpty(Model.ClientEmail)) { <br /><small class="text-muted">@Model.ClientEmail</small> }
+                        </dd>
+
+                        <dt class="col-4">Date</dt>
+                        <dd class="col-8">@a.StartTime.ToString("dddd dd MMM yyyy")</dd>
+
+                        <dt class="col-4">Time</dt>
+                        <dd class="col-8">@a.StartTime.ToString("hh:mm tt") – @a.EndTime.ToString("hh:mm tt")</dd>
+
+                        <dt class="col-4">Status</dt>
+                        <dd class="col-8"><span class="badge bg-@badge">@a.Status</span></dd>
+
+                        <dt class="col-4">Reason</dt>
+                        <dd class="col-8">@(a.Reason ?? "–")</dd>
+
+                        <dt class="col-4">Your note</dt>
+                        <dd class="col-8">@(a.TrainerNotes ?? "–")</dd>
+
+                        <dt class="col-4">Requested</dt>
+                        <dd class="col-8"><small class="text-muted">@a.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")</small></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Actions ===== -->
+        <div class="col-lg-7">
+            @if (!Model.CanApprove && !Model.CanReschedule && !Model.CanCancel && !Model.CanComplete)
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-1"></i> This appointment is @a.Status.ToLower() – no further actions are available.
+                </div>
+            }
+
+            @if (Model.CanApprove || Model.CanCancel || Model.CanComplete)
+            {
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-white"><h5 class="mb-0"><i class="fas fa-check-double me-2"></i> Respond</h5></div>
+                    <div class="card-body">
+                        <label for="quickNote" class="form-label">Note to client (optional)</label>
+                        <textarea id="quickNote" class="form-control mb-3" rows="2" maxlength="500"
+                                  placeholder="e.g. Please bring your food diary">@a.TrainerNotes</textarea>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            @if (Model.CanApprove)
+                            {
+                                <form method="post" action="/trainer/appointments/@a.AppointmentID/approve" class="note-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="Note" />
+                                    <button type="submit" class="btn btn-success"><i class="fas fa-check me-1"></i> Approve</button>
+                                </form>
+                            }
+                            @if (Model.CanComplete)
+                            {
+                                <form method="post" action="/trainer/appointments/@a.AppointmentID/complete" class="note-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="Note" />
+                                    <button type="submit" class="btn btn-info text-white"><i class="fas fa-flag-checkered me-1"></i> Mark Completed</button>
+                                </form>
+                            }
+                            @if (Model.CanCancel)
+                            {
+                                <form method="post" action="/trainer/appointments/@a.AppointmentID/cancel" class="note-form"
+                                      onsubmit="return confirm('Cancel this appointment? The client will be notified.');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="Note" />
+                                    <button type="submit" class="btn btn-outline-danger"><i class="fas fa-times me-1"></i> Cancel Appointment</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (Model.CanReschedule)
+            {
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white"><h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i> Reschedule</h5></div>
+                    <div class="card-body">
+                        <form method="post" action="/trainer/appointments/@a.AppointmentID/reschedule" novalidate>
+                            @Html.AntiForgeryToken()
+
+                            <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-4">
+                                    <label asp-for="Reschedule.Date" class="form-label"></label>
+                                    <input asp-for="Reschedule.Date" type="date" class="form-control"
+                                           min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="Reschedule.StartTime" class="form-label"></label>
+                                    <input asp-for="Reschedule.StartTime" type="time" class="form-control"
+                                           min="06:00" max="20:30" step="900" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="Reschedule.DurationMin" class="form-label"></label>
+                                    <select asp-for="Reschedule.DurationMin" class="form-select">
+                                        @foreach (var minutes in AppointmentInput.Durations)
+                                        {
+                                            <option value="@minutes">@minutes minutes</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Reschedule.Note" class="form-label"></label>
+                                <input asp-for="Reschedule.Note" class="form-control" maxlength="500"
+                                       placeholder="e.g. Moved because of a clash – see you then" />
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> Save New Time
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    // Copy the shared "Note to client" box into whichever action form is submitted
+    document.querySelectorAll('.note-form').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            form.querySelector('input[name="Note"]').value = document.getElementById('quickNote').value;
+        });
+    });
+</script>

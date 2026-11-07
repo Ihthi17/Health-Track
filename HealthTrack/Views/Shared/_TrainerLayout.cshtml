@@ -373,6 +373,10 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
+                        @* Notification bell with unread count (ViewComponents/NotificationBellViewComponent.cs) *@
+                        @await Component.InvokeAsync("NotificationBell")
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="/trainer">Dashboard</a>
                     </li>
                     <li class="nav-item">
@@ -413,7 +417,7 @@
                 </div>
 
                 <div class="sidebar-section-title">Navigation</div>
-                <a href="/trainer" class="sidebar-item @(actionName == "Index" ? "active" : "")">
+                <a href="/trainer" class="sidebar-item @(controllerName == "Trainer" && actionName == "Index" ? "active" : "")">
                     <i class="fas fa-home"></i> <span>Dashboard</span>
                 </a>
                 <a href="/trainer/clients" class="sidebar-item @(actionName == "Clients" ? "active" : "")">
@@ -430,6 +434,9 @@
                 </a>
                 <a href="/trainer/progress" class="sidebar-item @(actionName == "ClientProgress" ? "active" : "")">
                     <i class="fas fa-chart-line"></i> <span>Progress</span>
+                </a>
+                <a href="/trainer/reports" class="sidebar-item @(controllerName == "TrainerAnalytics" ? "active" : "")">
+                    <i class="fas fa-chart-pie"></i> <span>Reports</span>
                 </a>
             </div>
 

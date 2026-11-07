@@ -11,6 +11,15 @@
 </div> -->
 
 <div class="container-fluid mt-4">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success"><i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-1"></i> @TempData["ErrorMessage"]</div>
+    }
+
     <!-- Summary Cards -->
     <div class="row mb-4">
         <div class="col-md-6">
@@ -38,6 +47,7 @@
         </div>
         <div class="card-body">
             <form method="post" action="/superadmin/trainer-assignments/assign" class="row g-3">
+                @Html.AntiForgeryToken()
                 <div class="col-md-5">
                     <label class="form-label">Select Trainer</label>
                     <select name="trainerId" class="form-select" required>
@@ -105,9 +115,13 @@
                                         <span class="badge bg-accent">@assignment.Status</span>
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-danger" title="Remove Assignment">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        <form method="post" action="/superadmin/trainer-assignments/remove/@assignment.AssignmentId"
+                                              onsubmit="return confirm('Remove this assignment?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Assignment">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             }

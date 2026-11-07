@@ -1,0 +1,181 @@
+@model WorkoutPlanDetailsViewModel
+
+@{
+    ViewData["Title"] = "Edit Workout Plan";
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+
+    var plan = Model.Plan;
+    var weekOrder = new byte[] { 1, 2, 3, 4, 5, 6, 0 };   // Monday first
+    string[] dayNames = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 mb-1">@plan.PlanName</h1>
+            <p class="text-muted mb-0">
+                For <strong>@Model.ClientName</strong> ·
+                <span class="badge @(plan.IsActive ? "bg-success" : "bg-warning")">@(plan.IsActive ? "Active" : "Inactive")</span>
+            </p>
+        </div>
+        <a href="/trainer/workouts" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Back to Plans
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success"><i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]</div>
+    }
+
+    <div class="row g-4">
+        <!-- ===== Weekly schedule ===== -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-calendar-week me-2"></i> Weekly Schedule</h5></div>
+                <div class="card-body">
+                    @foreach (var day in weekOrder)
+                    {
+                        var items = plan.Items.Where(i => i.DayOfWeek == day).OrderBy(i => i.ReminderTime).ToList();
+                        <div class="border rounded p-2 mb-2">
+                            <div class="fw-semibold mb-1">@(dayNames[day])</div>
+                            @if (items.Count == 0)
+                            {
+                                <small class="text-muted">Rest day</small>
+                            }
+                            else
+                            {
+                                @foreach (var item in items)
+                                {
+                                    <div class="d-flex justify-content-between align-items-center small py-1 border-top">
+                                        <span>
+                                            <strong>@(item.Exercise?.ExerciseName ?? "Exercise")</strong>
+                                            @if (item.Sets.HasValue && item.Reps.HasValue) { <span class="text-muted"> · @item.Sets × @item.Reps</span> }
+                                            @if (item.DurationMin.HasValue) { <span class="text-muted"> · @item.DurationMin min</span> }
+                                            @if (item.ReminderTime.HasValue) { <span class="text-muted"> · <i class="far fa-clock"></i> @(item.ReminderTime.Value.ToString("hh\\:mm"))</span> }
+                                            @if (Model.TimesLogged.TryGetValue(item.PlanItemID, out var count))
+                                            {
+                                                <span class="badge bg-info ms-1" title="Times the client logged this exercise">done @count×</span>
+                                            }
+                                        </span>
+                                        <form method="post" action="/trainer/workouts/@plan.WorkoutPlanID/items/@item.PlanItemID/delete"
+                                              onsubmit="return confirm('Remove this exercise from the plan?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger py-0" title="Remove">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <!-- ===== Add exercise ===== -->
+            <div class="card border-0 shadow-sm mb-4" id="add-exercise">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i> Add Exercise</h5></div>
+                <div class="card-body">
+                    <form method="post" action="/trainer/workouts/@plan.WorkoutPlanID/items" novalidate>
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-7">
+                                <label asp-for="NewItem.ExerciseID" class="form-label"></label>
+                                <select asp-for="NewItem.ExerciseID" class="form-select">
+                                    <option value="">-- Choose --</option>
+                                    @foreach (var group in Model.Exercises.GroupBy(e => e.Category ?? "Other"))
+                                    {
+                                        <optgroup label="@group.Key">
+                                            @foreach (var ex in group)
+                                            {
+                                                <option value="@ex.ExerciseID">@ex.ExerciseName</option>
+                                            }
+                                        </optgroup>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-5">
+                                <label asp-for="NewItem.DayOfWeek" class="form-label"></label>
+                                <select asp-for="NewItem.DayOfWeek" class="form-select">
+                                    @foreach (var day in weekOrder)
+                                    {
+                                        <option value="@day">@(dayNames[day])</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-4">
+                                <label asp-for="NewItem.Sets" class="form-label"></label>
+                                <input asp-for="NewItem.Sets" type="number" min="1" max="50" class="form-control" />
+                            </div>
+                            <div class="col-4">
+                                <label asp-for="NewItem.Reps" class="form-label"></label>
+                                <input asp-for="NewItem.Reps" type="number" min="1" max="500" class="form-control" />
+                            </div>
+                            <div class="col-4">
+                                <label asp-for="NewItem.DurationMin" class="form-label"></label>
+                                <input asp-for="NewItem.DurationMin" type="number" min="1" max="600" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="NewItem.ReminderTime" class="form-label"></label>
+                            <input asp-for="NewItem.ReminderTime" type="time" class="form-control" />
+                            <div class="small text-muted">Optional – used for the client's workout reminder.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-plus me-1"></i> Add to Plan
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ===== Plan details ===== -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-cog me-2"></i> Plan Details</h5></div>
+                <div class="card-body">
+                    <form method="post" action="/trainer/workouts/@plan.WorkoutPlanID/edit" novalidate>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="Edit.ClientID" />
+
+                        <div class="mb-2">
+                            <label asp-for="Edit.PlanName" class="form-label"></label>
+                            <input asp-for="Edit.PlanName" class="form-control" maxlength="100" />
+                            <span asp-validation-for="Edit.PlanName" class="text-danger small"></span>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label asp-for="Edit.StartDate" class="form-label"></label>
+                                <input asp-for="Edit.StartDate" type="date" class="form-control" />
+                            </div>
+                            <div class="col-6">
+                                <label asp-for="Edit.EndDate" class="form-label"></label>
+                                <input asp-for="Edit.EndDate" type="date" class="form-control" />
+                                <span asp-validation-for="Edit.EndDate" class="text-danger small"></span>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label asp-for="Edit.Notes" class="form-label"></label>
+                            <textarea asp-for="Edit.Notes" class="form-control" rows="2" maxlength="500"></textarea>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input asp-for="Edit.IsActive" class="form-check-input" />
+                            <label asp-for="Edit.IsActive" class="form-check-label"></label>
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-save me-1"></i> Save Details
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,111 @@
+@model List<Notification>
+
+@{
+    ViewData["Title"] = "Notifications";
+    bool isTrainer = ViewData["IsTrainer"] as bool? ?? false;
+
+    // Same page for clients and trainers, inside their own layout
+    Layout = isTrainer ? "~/Views/Shared/_TrainerLayout.cshtml" : "~/Views/Shared/_ClientLayout.cshtml";
+
+    int unreadCount = Model.Count(n => !n.IsRead);
+
+    // Icon and colour for each notification type
+    Func<string, string> Icon = type => type switch
+    {
+        "Appointment" => "fa-calendar-check text-primary",
+        "Workout"     => "fa-dumbbell text-success",
+        "Diet"        => "fa-apple-alt text-success",
+        "Feedback"    => "fa-comment-dots text-info",
+        "Assignment"  => "fa-user-friends text-secondary",
+        "Reminder"    => "fa-clock text-warning",
+        _             => "fa-bell text-secondary"
+    };
+
+    // "5 min ago" style text (CreatedAt is stored in UTC)
+    Func<DateTime, string> Ago = createdUtc =>
+    {
+        var local = DateTime.SpecifyKind(createdUtc, DateTimeKind.Utc).ToLocalTime();
+        var diff = DateTime.Now - local;
+        if (diff.TotalMinutes < 1) return "just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} min ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours} h ago";
+        return local.ToString("dd MMM yyyy, hh:mm tt");
+    };
+}
+
+<div class="@(isTrainer ? "container-fluid mt-4" : "")">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 mb-1">Notifications</h1>
+            <p class="text-muted mb-0">
+                @(unreadCount > 0 ? $"You have {unreadCount} unread notification(s)." : "You're all caught up.")
+            </p>
+        </div>
+        @if (unreadCount > 0)
+        {
+            <form method="post" action="/notifications/read-all">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-check-double me-1"></i> Mark all as read
+                </button>
+            </form>
+        }
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success"><i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-1"></i> @TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            @if (Model.Count == 0)
+            {
+                <p class="text-muted p-4 mb-0"><i class="fas fa-bell-slash me-1"></i> No notifications yet.</p>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var n in Model)
+                    {
+                        <li class="list-group-item d-flex gap-3 align-items-start py-3 @(n.IsRead ? "" : "bg-light")">
+                            <i class="fas @(Icon(n.Type)) fa-lg mt-1" style="width: 24px;"></i>
+
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between flex-wrap">
+                                    <strong>
+                                        @n.Title
+                                        @if (!n.IsRead) { <span class="badge bg-danger ms-1">New</span> }
+                                    </strong>
+                                    <small class="text-muted">@(Ago(n.CreatedAt))</small>
+                                </div>
+                                @if (!string.IsNullOrEmpty(n.Message))
+                                {
+                                    <div class="small text-muted mt-1">@n.Message</div>
+                                }
+
+                                <div class="d-flex gap-2 mt-2">
+                                    <form method="post" action="/notifications/@n.NotificationID/open">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-primary py-0">Open</button>
+                                    </form>
+                                    @if (!n.IsRead)
+                                    {
+                                        <form method="post" action="/notifications/@n.NotificationID/read">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary py-0">Mark as read</button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>

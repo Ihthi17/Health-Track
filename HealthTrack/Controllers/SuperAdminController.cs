@@ -1945,6 +1945,10 @@ namespace HealthTrack.Controllers
 
         #region Trainer Assignments Management
 
+        /// <summary>
+        /// GET /superadmin/trainer-assignments - assign form plus the list of
+        /// active assignments, read from the TrainerClientAssignments table.
+        /// </summary>
         [HttpGet("trainer-assignments")]
         public async Task<IActionResult> TrainerAssignments()
         {
@@ -1967,8 +1971,26 @@ namespace HealthTrack.Controllers
                     .Where(c => c.User != null && c.User.IsActive && c.User.RoleID == clientRole.RoleID)
                     .ToListAsync();
 
-                // Get current assignments (for now, this is simulated - you'd need a TrainerClientAssignment table)
-                var assignments = new List<TrainerAssignmentViewModel>();
+                // Current ACTIVE assignments from the database.
+                // TrainerID and ClientID are both UserIDs, so join straight to Users for names.
+                var assignments = await (
+                    from a in _context.TrainerClientAssignments
+                    join tu in _context.Users on a.TrainerID equals tu.UserID
+                    join cu in _context.Users on a.ClientID equals cu.UserID
+                    where a.IsActive
+                    orderby a.AssignedAt descending
+                    select new TrainerAssignmentViewModel
+                    {
+                        AssignmentId = a.AssignmentID,
+                        TrainerId = a.TrainerID,
+                        TrainerName = tu.FirstName + " " + tu.LastName,
+                        TrainerEmail = tu.Email,
+                        ClientId = a.ClientID,
+                        ClientName = cu.FirstName + " " + cu.LastName,
+                        ClientEmail = cu.Email,
+                        AssignedDate = a.AssignedAt,
+                        Status = "Active"
+                    }).ToListAsync();
 
                 var viewModel = new ManageAssignmentsViewModel
                 {
@@ -1988,7 +2010,14 @@ namespace HealthTrack.Controllers
             }
         }
 
+        /// <summary>
+        /// POST /superadmin/trainer-assignments/assign - saves a trainer-client link.
+        /// A client has ONE active trainer: any previous active assignment for the
+        /// client is ended (IsActive = false, kept for history) before the new one is added.
+        /// Both the trainer and the client get an in-app notification.
+        /// </summary>
         [HttpPost("trainer-assignments/assign")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignTrainer(int trainerId, int clientId)
         {
             try
@@ -1996,18 +2025,79 @@ namespace HealthTrack.Controllers
                 // Validate trainer exists
                 var trainer = await _context.TrainerProfiles.FindAsync(trainerId);
                 if (trainer == null)
-                    return BadRequest("Trainer not found");
+                {
+                    TempData["ErrorMessage"] = "Trainer not found.";
+                    return RedirectToAction("TrainerAssignments");
+                }
 
                 // Validate client exists
                 var client = await _context.ClientProfiles.FindAsync(clientId);
                 if (client == null)
-                    return BadRequest("Client not found");
+                {
+                    TempData["ErrorMessage"] = "Client not found.";
+                    return RedirectToAction("TrainerAssignments");
+                }
 
-                // TODO: Create assignment record in database
-                // For now, we'll just log this action
+                // Is this client already actively assigned?
+                var existing = await _context.TrainerClientAssignments
+                    .Where(a => a.ClientID == clientId && a.IsActive)
+                    .ToListAsync();
+
+                if (existing.Any(a => a.TrainerID == trainerId))
+                {
+                    TempData["ErrorMessage"] = "This client is already assigned to that trainer.";
+                    return RedirectToAction("TrainerAssignments");
+                }
+
+                // End the client's previous assignment (one active trainer per client)
+                foreach (var old in existing)
+                {
+                    old.IsActive = false;
+                }
+
+                var adminUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : (int?)null;
+
+                _context.TrainerClientAssignments.Add(new TrainerClientAssignment
+                {
+                    TrainerID = trainerId,
+                    ClientID = clientId,
+                    AssignedBy = adminUserId,
+                    AssignedAt = DateTime.Now,
+                    IsActive = true
+                });
+
+                // Let both people know (TrainerID / ClientID are their UserIDs)
+                var trainerUser = await _context.Users.FindAsync(trainerId);
+                var clientUser = await _context.Users.FindAsync(clientId);
+                string trainerName = trainerUser != null ? $"{trainerUser.FirstName} {trainerUser.LastName}" : "a trainer";
+                string clientName = clientUser != null ? $"{clientUser.FirstName} {clientUser.LastName}" : "a client";
+
+                _context.Notifications.Add(new Notification
+                {
+                    UserID = clientId,
+                    Type = "Assignment",
+                    Title = "Trainer assigned",
+                    Message = $"{trainerName} is now your trainer.",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+                _context.Notifications.Add(new Notification
+                {
+                    UserID = trainerId,
+                    Type = "Assignment",
+                    Title = "New client assigned",
+                    Message = $"{clientName} has been assigned to you.",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+
                 await LogAudit($"Assigned trainer {trainerId} to client {clientId}", "TrainerAssignment", $"Trainer:{trainerId},Client:{clientId}");
 
-                TempData["SuccessMessage"] = "Trainer assigned to client successfully.";
+                TempData["SuccessMessage"] = existing.Any()
+                    ? $"{clientName} has been moved to {trainerName}."
+                    : $"{clientName} has been assigned to {trainerName}.";
                 return RedirectToAction("TrainerAssignments");
             }
             catch (Exception ex)
@@ -2016,6 +2106,40 @@ namespace HealthTrack.Controllers
                 TempData["ErrorMessage"] = "Error assigning trainer: " + ex.Message;
                 return RedirectToAction("TrainerAssignments");
             }
+        }
+
+        /// <summary>
+        /// POST /superadmin/trainer-assignments/remove/{id} - ends an assignment.
+        /// The row is kept with IsActive = false so there is a history of who trained whom.
+        /// </summary>
+        [HttpPost("trainer-assignments/remove/{id:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveAssignment(int id)
+        {
+            try
+            {
+                var assignment = await _context.TrainerClientAssignments.FindAsync(id);
+                if (assignment == null || !assignment.IsActive)
+                {
+                    TempData["ErrorMessage"] = "Assignment not found.";
+                    return RedirectToAction("TrainerAssignments");
+                }
+
+                assignment.IsActive = false;
+                await _context.SaveChangesAsync();
+
+                await LogAudit($"Removed assignment {id} (trainer {assignment.TrainerID}, client {assignment.ClientID})",
+                               "TrainerAssignmentRemove", $"Assignment:{id}");
+
+                TempData["SuccessMessage"] = "Assignment removed.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing assignment {Id}", id);
+                TempData["ErrorMessage"] = "Error removing assignment: " + ex.Message;
+            }
+
+            return RedirectToAction("TrainerAssignments");
         }
 
         #endregion
@@ -2111,6 +2235,9 @@ namespace HealthTrack.Controllers
                     TotalRecords = appointmentDetails.Count
                 };
 
+                // Assignment, workout, diet and progress reports (data from the client/trainer modules)
+                await FillConnectedReportsAsync(viewModel, allClients, allTrainers, actualStartDate, actualEndDate);
+
                 return View(viewModel);
             }
             catch (Exception ex)
@@ -2119,6 +2246,119 @@ namespace HealthTrack.Controllers
                 TempData["ErrorMessage"] = "Error generating reports: " + ex.Message;
                 return RedirectToAction("Index");
             }
+        }
+
+        /// <summary>
+        /// Fills the report sections that use data from the client and trainer modules:
+        /// trainer assignments, workout plans/popular routines/engagement, diet plans,
+        /// and client progress. Used by the Reports page and by the CSV/Excel/PDF exports.
+        /// </summary>
+        private async Task FillConnectedReportsAsync(ReportsAndAnalyticsViewModel viewModel,
+            List<ClientProfile> allClients, List<TrainerProfile> allTrainers,
+            DateTime actualStartDate, DateTime actualEndDate)
+        {
+            // ----- Trainer assignment statistics (from TrainerClientAssignments) -----
+            var activeAssignments = await _context.TrainerClientAssignments
+                .Where(a => a.IsActive)
+                .ToListAsync();
+
+            var activeClientIds = allClients
+                .Where(c => c.User?.IsActive ?? false)
+                .Select(c => c.ClientProfileID)
+                .ToHashSet();
+
+            viewModel.TotalTrainerAssignments = activeAssignments.Count;
+            viewModel.TotalAssignedClients = activeAssignments.Select(a => a.ClientID).Distinct().Count(id => activeClientIds.Contains(id));
+            viewModel.TotalUnassignedClients = activeClientIds.Count - viewModel.TotalAssignedClients;
+            viewModel.AverageClientsPerTrainer = viewModel.TotalActiveTrainers > 0
+                ? Math.Round((double)viewModel.TotalAssignedClients / viewModel.TotalActiveTrainers, 1)
+                : 0;
+
+            var periodAppointments = await _context.Appointments
+                .Where(a => a.StartTime >= actualStartDate && a.StartTime <= actualEndDate)
+                .Select(a => new { a.TrainerID, a.Status })
+                .ToListAsync();
+
+            viewModel.TrainerAssignmentStats = allTrainers
+                .Select(t => new TrainerAssignmentStatsRecord
+                {
+                    TrainerId = t.TrainerProfileID,
+                    TrainerName = $"{t.User?.FirstName} {t.User?.LastName}",
+                    ClientCount = activeAssignments.Count(a => a.TrainerID == t.TrainerProfileID),
+                    TotalAppointments = periodAppointments.Count(a => a.TrainerID == t.TrainerProfileID),
+                    CompletedAppointments = periodAppointments.Count(a => a.TrainerID == t.TrainerProfileID && a.Status == "Completed")
+                })
+                .OrderByDescending(r => r.ClientCount)
+                .ToList();
+
+            // ----- Workout plans, popular routines and engagement (last 30 days) -----
+            viewModel.Analytics = await AnalyticsService.BuildReportAsync(_context, null, 30);
+
+            // Names of all users, used by the diet and progress reports (ClientID/TrainerID = UserID)
+            var userNames = await _context.Users
+                .Select(u => new { u.UserID, Name = u.FirstName + " " + u.LastName })
+                .ToDictionaryAsync(u => u.UserID, u => u.Name);
+            string NameOf(int id) => userNames.TryGetValue(id, out var n) ? n : "Unknown";
+
+            // ----- Diet management report -----
+            var dietPlans = await _context.DietPlans.Include(d => d.Meals).ToListAsync();
+            viewModel.DietPlanRows = dietPlans
+                .OrderByDescending(d => d.IsActive).ThenByDescending(d => d.StartDate)
+                .Select(d => new AdminDietPlanRow
+                {
+                    ClientName = NameOf(d.ClientID),
+                    TrainerName = NameOf(d.TrainerID),
+                    PlanName = d.PlanName,
+                    DailyCalories = d.DailyCalories,
+                    MealsPerDay = d.Meals.Count,
+                    StartDate = d.StartDate,
+                    IsActive = d.IsActive
+                })
+                .ToList();
+            viewModel.TotalMealLogs = await _context.MealLogs.CountAsync();
+
+            // ----- Progress & health metrics report -----
+            var metrics = await _context.HealthMetrics
+                .OrderBy(m => m.MeasuredOn).ThenBy(m => m.MetricID)
+                .Select(m => new { m.ClientID, m.MeasuredOn, m.WeightKg, m.BMI })
+                .ToListAsync();
+
+            viewModel.TotalHealthRecords = metrics.Count;
+            viewModel.ClientsTrackingMetrics = metrics.Select(m => m.ClientID).Distinct().Count();
+            viewModel.ClientsWithGoals = allClients.Count(c => !string.IsNullOrWhiteSpace(c.GoalDescription));
+
+            viewModel.ClientProgressRows = allClients
+                .Select(c =>
+                {
+                    var mine = metrics.Where(m => m.ClientID == c.ClientProfileID).ToList();
+                    var weights = mine.Where(m => m.WeightKg.HasValue).ToList();
+                    return new AdminClientProgressRow
+                    {
+                        ClientName = NameOf(c.ClientProfileID),
+                        Goal = c.GoalDescription,
+                        StartWeightKg = weights.FirstOrDefault()?.WeightKg,
+                        CurrentWeightKg = weights.LastOrDefault()?.WeightKg,
+                        CurrentBmi = mine.LastOrDefault(m => m.BMI.HasValue)?.BMI,
+                        Measurements = mine.Count,
+                        LastMeasured = mine.LastOrDefault()?.MeasuredOn
+                    };
+                })
+                .OrderByDescending(r => r.Measurements)
+                .ToList();
+        }
+
+        /// <summary>Loads clients and trainers (with their user accounts) and fills the connected reports.</summary>
+        private async Task<ReportsAndAnalyticsViewModel> BuildConnectedReportsAsync(DateTime startDate, DateTime endDate)
+        {
+            var allClients = await _context.ClientProfiles.Include(c => c.User).Where(c => c.User != null).ToListAsync();
+            var allTrainers = await _context.TrainerProfiles.Include(t => t.User).Where(t => t.User != null).ToListAsync();
+
+            var viewModel = new ReportsAndAnalyticsViewModel
+            {
+                TotalActiveTrainers = allTrainers.Count(t => t.User?.IsActive ?? false)
+            };
+            await FillConnectedReportsAsync(viewModel, allClients, allTrainers, startDate, endDate);
+            return viewModel;
         }
 
         [HttpGet("reports/export-csv")]
@@ -2164,7 +2404,11 @@ namespace HealthTrack.Controllers
                 var actualStartDate = startDate ?? DateTime.UtcNow.AddMonths(-1);
                 var actualEndDate = endDate ?? DateTime.UtcNow;
                 var exportFormat = format ?? "csv";
-                var type = reportType ?? "appointments";
+                // The page sends the tab name without "-report" (e.g. "diet" from "diet-tab"),
+                // so turn it into the names used below (e.g. "diet-report").
+                var type = string.IsNullOrWhiteSpace(reportType) ? "appointments-report" : reportType.Trim().ToLowerInvariant();
+                if (type != "analytics" && !type.EndsWith("-report"))
+                    type += "-report";
 
                 // Generate appropriate report based on type
                 return exportFormat switch
@@ -2193,9 +2437,9 @@ namespace HealthTrack.Controllers
                 "users-report" => await ExportUsersAsCSV(startDate, endDate),
                 "appointments-report" => await ExportAppointmentsAsCSV(startDate, endDate),
                 "trainers-report" => await ExportTrainersAsCSV(startDate, endDate),
-                "workouts-report" => ExportWorkoutsAsCSV(),
-                "diet-report" => ExportDietAsCSV(),
-                "progress-report" => ExportProgressAsCSV(),
+                "workouts-report" => await ExportWorkoutsAsCSV(),
+                "diet-report" => await ExportDietAsCSV(startDate, endDate),
+                "progress-report" => await ExportProgressAsCSV(startDate, endDate),
                 _ => await ExportAppointmentsAsCSV(startDate, endDate)
             };
         }
@@ -2282,62 +2526,112 @@ namespace HealthTrack.Controllers
                     .ToListAsync();
 
                 var completedCount = appointments.Count(a => a.Status == "Completed");
-                csv.AppendLine($"{trainer.TrainerProfileID},\"{trainer.User?.FirstName} {trainer.User?.LastName}\",\"{trainer.User?.Email}\",0,{appointments.Count},{completedCount},\"{trainer.Specialization ?? ""}\"");
+                // Real number of clients actively assigned to this trainer
+                var clientCount = await _context.TrainerClientAssignments
+                    .CountAsync(a => a.TrainerID == trainer.TrainerProfileID && a.IsActive);
+
+                csv.AppendLine($"{trainer.TrainerProfileID},\"{trainer.User?.FirstName} {trainer.User?.LastName}\",\"{trainer.User?.Email}\",{clientCount},{appointments.Count},{completedCount},\"{trainer.Specialization ?? ""}\"");
             }
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
             return File(bytes, "text/csv", $"trainers_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
         }
 
-        private IActionResult ExportWorkoutsAsCSV()
+        /// <summary>
+        /// Workout plans report CSV: plans, completion, popular exercises and engagement
+        /// for all clients over the last 30 days (built by AnalyticsService).
+        /// </summary>
+        private async Task<IActionResult> ExportWorkoutsAsCSV()
         {
-            var csv = new System.Text.StringBuilder();
-            csv.AppendLine("Workout Plans Report");
-            csv.AppendLine("No workout data available - Feature integration pending");
-            csv.AppendLine();
-            csv.AppendLine("Client,Plan Name,Start Date,End Date,Status");
-
-            var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+            var report = await AnalyticsService.BuildReportAsync(_context, null, 30);
+            var bytes = AnalyticsService.ToCsv(report, "HealthTrack - Workout Plans Report");
             return File(bytes, "text/csv", $"workouts_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
         }
 
-        private IActionResult ExportDietAsCSV()
+        /// <summary>Diet plans report CSV (real data from DietPlans / DietPlanMeals / MealLogs).</summary>
+        private async Task<IActionResult> ExportDietAsCSV(DateTime startDate, DateTime endDate)
         {
+            var report = await BuildConnectedReportsAsync(startDate, endDate);
+
             var csv = new System.Text.StringBuilder();
             csv.AppendLine("Diet Plans Report");
-            csv.AppendLine("No diet data available - Feature integration pending");
+            csv.AppendLine($"Total diet plans,{report.DietPlanRows.Count}");
+            csv.AppendLine($"Active plans,{report.DietPlanRows.Count(d => d.IsActive)}");
+            csv.AppendLine($"Meals logged by clients,{report.TotalMealLogs}");
             csv.AppendLine();
-            csv.AppendLine("Client,Plan Name,Calories Target,Meals Per Day,Status");
+            csv.AppendLine("Client,Plan Name,Trainer,Calories Target,Meals Per Day,Start Date,Status");
+            foreach (var d in report.DietPlanRows)
+            {
+                csv.AppendLine($"\"{d.ClientName}\",\"{d.PlanName}\",\"{d.TrainerName}\",{d.DailyCalories?.ToString() ?? ""},{d.MealsPerDay},{d.StartDate:yyyy-MM-dd},{(d.IsActive ? "Active" : "Inactive")}");
+            }
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
             return File(bytes, "text/csv", $"diet_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
         }
 
-        private IActionResult ExportProgressAsCSV()
+        /// <summary>Progress & health metrics report CSV (real data from HealthMetrics / ClientProfiles).</summary>
+        private async Task<IActionResult> ExportProgressAsCSV(DateTime startDate, DateTime endDate)
         {
+            var report = await BuildConnectedReportsAsync(startDate, endDate);
+
             var csv = new System.Text.StringBuilder();
             csv.AppendLine("Progress & Health Metrics Report");
-            csv.AppendLine("No progress data available - Feature integration pending");
+            csv.AppendLine($"Clients with goals,{report.ClientsWithGoals}");
+            csv.AppendLine($"Clients tracking metrics,{report.ClientsTrackingMetrics}");
+            csv.AppendLine($"Health records,{report.TotalHealthRecords}");
             csv.AppendLine();
-            csv.AppendLine("Client,Goal,Target,Current,Progress %,Status");
+            csv.AppendLine("Client,Goal,Start Weight (kg),Current Weight (kg),Change (kg),BMI,Records,Last Measured");
+            foreach (var r in report.ClientProgressRows)
+            {
+                csv.AppendLine($"\"{r.ClientName}\",\"{(r.Goal ?? "").Replace("\"", "\"\"")}\",{r.StartWeightKg?.ToString("0.0") ?? ""},{r.CurrentWeightKg?.ToString("0.0") ?? ""},{r.WeightChangeKg?.ToString("0.0") ?? ""},{r.CurrentBmi?.ToString("0.0") ?? ""},{r.Measurements},{r.LastMeasured?.ToString("yyyy-MM-dd") ?? ""}");
+            }
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
             return File(bytes, "text/csv", $"progress_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
         }
 
+        /// <summary>
+        /// Excel export: builds the report's CSV, then converts it into a real .xlsx
+        /// workbook (ReportFileWriter - no extra libraries needed).
+        /// </summary>
         private async Task<IActionResult> ExportReportAsExcel(string reportType, DateTime startDate, DateTime endDate)
         {
-            // For Excel, we'll use CSV for now with .xlsx extension
-            // Full Excel export would require a library like EPPlus or ClosedXML
-            return await ExportReportAsCSV(reportType, startDate, endDate);
+            if (await ExportReportAsCSV(reportType, startDate, endDate) is not FileContentResult csvFile)
+                return RedirectToAction("Reports");
+
+            var rows = ReportFileWriter.ParseCsv(csvFile.FileContents);
+            var xlsx = ReportFileWriter.ToXlsx(rows, ReportTitle(reportType));
+            var fileName = Path.ChangeExtension(csvFile.FileDownloadName, ".xlsx");
+            return File(xlsx, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
 
+        /// <summary>
+        /// PDF export: builds the report's CSV, then shows it as a clean printable page
+        /// that opens the print dialog - the user chooses "Save as PDF".
+        /// (Creating PDF files directly would need a third-party library.)
+        /// </summary>
         private async Task<IActionResult> ExportReportAsPDF(string reportType, DateTime startDate, DateTime endDate)
         {
-            // PDF export would require a library like iTextSharp or SelectPdf
-            // For now, return CSV as fallback
-            return await ExportReportAsCSV(reportType, startDate, endDate);
+            if (await ExportReportAsCSV(reportType, startDate, endDate) is not FileContentResult csvFile)
+                return RedirectToAction("Reports");
+
+            var rows = ReportFileWriter.ParseCsv(csvFile.FileContents);
+            var title = $"{ReportTitle(reportType)} ({startDate:dd MMM yyyy} - {endDate:dd MMM yyyy})";
+            return Content(ReportFileWriter.ToPrintableHtml(rows, title), "text/html", System.Text.Encoding.UTF8);
         }
+
+        /// <summary>Readable title for each report tab.</summary>
+        private static string ReportTitle(string reportType) => reportType switch
+        {
+            "analytics" => "Analytics Overview",
+            "users-report" => "User Management Report",
+            "appointments-report" => "Appointments Report",
+            "trainers-report" => "Trainer Assignments Report",
+            "workouts-report" => "Workout Plans Report",
+            "diet-report" => "Diet Management Report",
+            "progress-report" => "Progress and Health Metrics Report",
+            _ => "HealthTrack Report"
+        };
 
         #endregion
 

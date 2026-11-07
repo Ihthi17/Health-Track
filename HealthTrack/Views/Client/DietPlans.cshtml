@@ -1,0 +1,270 @@
+@model ClientDietViewModel
+
+@{
+    ViewData["Title"] = "Diet Plans";
+    Layout = "~/Views/Shared/_ClientLayout.cshtml";
+
+    // Order meals through the day
+    string[] mealOrder = { "Breakfast", "Lunch", "Snack", "Dinner" };
+    Func<string, int> MealRank = type =>
+    {
+        int index = Array.IndexOf(mealOrder, type);
+        return index >= 0 ? index : 99;   // unknown types go last
+    };
+
+    int? target = Model.ActivePlan?.DailyCalories;
+    int percent = target.HasValue && target.Value > 0
+        ? (int)Math.Min(100, Math.Round(Model.TodayCalories * 100.0 / target.Value))
+        : 0;
+    bool overTarget = target.HasValue && Model.TodayCalories > target.Value;
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">Diet Plans</h1>
+    <p class="text-muted mb-0">Follow your trainer's meal plan and keep track of what you eat.</p>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success"><i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-1"></i> @TempData["ErrorMessage"]</div>
+}
+
+<!-- ===== Today's intake summary ===== -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-5">
+                <h6 class="text-muted mb-1"><i class="fas fa-utensils me-1"></i> Eaten today</h6>
+                <h3 class="mb-1">
+                    @Model.TodayCalories <small class="fs-6 text-muted">kcal@(target.HasValue ? $" of {target} target" : "")</small>
+                </h3>
+                @if (target.HasValue)
+                {
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar @(overTarget ? "bg-danger" : "bg-success")" role="progressbar"
+                             style="width: @percent%;" aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <small class="@(overTarget ? "text-danger" : "text-muted")">
+                        @(overTarget
+                            ? $"{Model.TodayCalories - target.Value} kcal over your target"
+                            : $"{target.Value - Model.TodayCalories} kcal remaining")
+                    </small>
+                }
+                else
+                {
+                    <small class="text-muted">No daily target set by your trainer yet.</small>
+                }
+            </div>
+            <div class="col-md-7">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="fw-bold fs-5">@Model.TodayProtein.ToString("0") g</div>
+                        <small class="text-muted">Protein</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold fs-5">@Model.TodayCarbs.ToString("0") g</div>
+                        <small class="text-muted">Carbs</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold fs-5">@Model.TodayFat.ToString("0") g</div>
+                        <small class="text-muted">Fat</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- ===== Trainer's diet plan (read-only) ===== -->
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header"><h5><i class="fas fa-clipboard-list me-1"></i> My Diet Plan</h5></div>
+            <div class="card-body">
+                @if (Model.ActivePlan == null)
+                {
+                    <p class="text-muted mb-0">
+                        Your trainer hasn't assigned a diet plan yet. You can still log your meals using the form.
+                    </p>
+                }
+                else
+                {
+                    <h6 class="mb-1">@Model.ActivePlan.PlanName</h6>
+                    <p class="small text-muted mb-3">
+                        @if (!string.IsNullOrEmpty(Model.PlanTrainerName)) { <span>By @Model.PlanTrainerName · </span> }
+                        From @Model.ActivePlan.StartDate.ToString("dd MMM yyyy")
+                        @if (Model.ActivePlan.EndDate.HasValue) { <span> to @Model.ActivePlan.EndDate.Value.ToString("dd MMM yyyy")</span> }
+                    </p>
+                    @if (!string.IsNullOrEmpty(Model.ActivePlan.Notes))
+                    {
+                        <div class="alert alert-info small py-2"><i class="fas fa-sticky-note me-1"></i> @Model.ActivePlan.Notes</div>
+                    }
+
+                    @if (Model.ActivePlan.Meals.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No meals have been added to this plan yet.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var meal in Model.ActivePlan.Meals.OrderBy(m => MealRank(m.MealType)).ThenBy(m => m.MealTime))
+                            {
+                                bool eatenToday = Model.TodaysMeals.Any(l => l.MealType == meal.MealType
+                                                     && string.Equals(l.FoodName, meal.MealName, StringComparison.OrdinalIgnoreCase));
+                                <li class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <span class="badge bg-info me-1">@meal.MealType</span>
+                                            <strong>@meal.MealName</strong>
+                                            @if (meal.MealTime.HasValue)
+                                            {
+                                                <span class="text-muted small"> · <i class="far fa-clock"></i> @(meal.MealTime.Value.ToString("hh\\:mm"))</span>
+                                            }
+                                            @if (meal.Calories.HasValue)
+                                            {
+                                                <span class="text-muted small"> · @meal.Calories kcal</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(meal.Description))
+                                            {
+                                                <div class="small text-muted">@meal.Description</div>
+                                            }
+                                        </div>
+                                        @if (eatenToday)
+                                        {
+                                            <span class="badge bg-success"><i class="fas fa-check"></i> Eaten</span>
+                                        }
+                                        else
+                                        {
+                                            <a href="/client/diet-plans?mealId=@meal.DietMealID#log-form" class="btn btn-sm btn-outline-primary py-0">Log it</a>
+                                        }
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Log a meal form ===== -->
+    <div class="col-lg-5">
+        <div class="card h-100" id="log-form">
+            <div class="card-header"><h5><i class="fas fa-plus-circle me-1"></i> Log a Meal</h5></div>
+            <div class="card-body">
+                <form asp-action="LogMeal" method="post" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label asp-for="NewMeal.LogDate" class="form-label"></label>
+                            <input asp-for="NewMeal.LogDate" type="date" class="form-control"
+                                   max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="NewMeal.MealType" class="form-label"></label>
+                            <select asp-for="NewMeal.MealType" class="form-select">
+                                <option value="">-- Choose --</option>
+                                @foreach (var type in MealLogInput.MealTypes)
+                                {
+                                    <option value="@type">@type</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label asp-for="NewMeal.FoodName" class="form-label"></label>
+                        <input asp-for="NewMeal.FoodName" class="form-control" maxlength="100" placeholder="e.g. Rice and chicken curry" />
+                    </div>
+
+                    <div class="mb-2">
+                        <label asp-for="NewMeal.Calories" class="form-label"></label>
+                        <input asp-for="NewMeal.Calories" type="number" min="0" max="5000" class="form-control" />
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <label asp-for="NewMeal.ProteinG" class="form-label"></label>
+                            <input asp-for="NewMeal.ProteinG" type="number" step="0.1" min="0" max="500" class="form-control" />
+                        </div>
+                        <div class="col-4">
+                            <label asp-for="NewMeal.CarbsG" class="form-label"></label>
+                            <input asp-for="NewMeal.CarbsG" type="number" step="0.1" min="0" max="1000" class="form-control" />
+                        </div>
+                        <div class="col-4">
+                            <label asp-for="NewMeal.FatG" class="form-label"></label>
+                            <input asp-for="NewMeal.FatG" type="number" step="0.1" min="0" max="500" class="form-control" />
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-save me-1"></i> Save Meal
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Meal history: today first, then earlier days ===== -->
+<div class="card">
+    <div class="card-header"><h5><i class="fas fa-history me-1"></i> Meal History</h5></div>
+    <div class="card-body p-0">
+        @{
+            var allMeals = Model.TodaysMeals.Concat(Model.RecentMeals).ToList();
+        }
+        @if (allMeals.Count == 0)
+        {
+            <p class="text-muted p-4 mb-0">No meals logged yet.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Meal</th>
+                            <th>Food</th>
+                            <th>Calories</th>
+                            <th>Protein</th>
+                            <th>Carbs</th>
+                            <th>Fat</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in allMeals)
+                        {
+                            <tr>
+                                <td>@(m.LogDate == DateTime.Today ? "Today" : m.LogDate.ToString("dd MMM yyyy"))</td>
+                                <td><span class="badge bg-info">@m.MealType</span></td>
+                                <td>@m.FoodName</td>
+                                <td>@(m.Calories?.ToString() ?? "–")</td>
+                                <td>@(m.ProteinG.HasValue ? m.ProteinG.Value.ToString("0.#") + " g" : "–")</td>
+                                <td>@(m.CarbsG.HasValue ? m.CarbsG.Value.ToString("0.#") + " g" : "–")</td>
+                                <td>@(m.FatG.HasValue ? m.FatG.Value.ToString("0.#") + " g" : "–")</td>
+                                <td class="text-end">
+                                    <form asp-action="DeleteMealLog" asp-route-id="@m.MealLogID" method="post"
+                                          onsubmit="return confirm('Delete this meal?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

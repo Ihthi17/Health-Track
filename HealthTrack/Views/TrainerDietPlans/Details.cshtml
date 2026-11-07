@@ -1,0 +1,176 @@
+@model DietPlanDetailsViewModel
+
+@{
+    ViewData["Title"] = "Edit Diet Plan";
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+
+    var plan = Model.Plan;
+    string[] mealOrder = { "Breakfast", "Lunch", "Snack", "Dinner" };
+    int? target = plan.DailyCalories;
+    bool overTarget = target.HasValue && Model.PlannedCalories > target.Value;
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 mb-1">@plan.PlanName</h1>
+            <p class="text-muted mb-0">
+                For <strong>@Model.ClientName</strong> ·
+                <span class="badge @(plan.IsActive ? "bg-success" : "bg-warning")">@(plan.IsActive ? "Active" : "Inactive")</span>
+            </p>
+        </div>
+        <a href="/trainer/diets" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Back to Plans
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success"><i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]</div>
+    }
+
+    <div class="row g-4">
+        <!-- ===== Meals in the plan ===== -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-utensils me-2"></i> Daily Meals</h5></div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        <strong>Planned:</strong> @Model.PlannedCalories kcal
+                        @if (target.HasValue)
+                        {
+                            <span class="@(overTarget ? "text-danger" : "text-muted")"> / target @target kcal</span>
+                            @if (overTarget) { <span class="badge bg-danger ms-1">over target</span> }
+                        }
+                    </p>
+
+                    @foreach (var type in mealOrder)
+                    {
+                        var meals = plan.Meals.Where(m => m.MealType == type).OrderBy(m => m.MealTime).ToList();
+                        <div class="border rounded p-2 mb-2">
+                            <div class="fw-semibold mb-1">@type</div>
+                            @if (meals.Count == 0)
+                            {
+                                <small class="text-muted">Nothing planned</small>
+                            }
+                            else
+                            {
+                                @foreach (var meal in meals)
+                                {
+                                    <div class="d-flex justify-content-between align-items-start small py-1 border-top">
+                                        <span>
+                                            <strong>@meal.MealName</strong>
+                                            @if (meal.MealTime.HasValue) { <span class="text-muted"> · <i class="far fa-clock"></i> @(meal.MealTime.Value.ToString("hh\\:mm"))</span> }
+                                            @if (meal.Calories.HasValue) { <span class="text-muted"> · @meal.Calories kcal</span> }
+                                            @if (!string.IsNullOrEmpty(meal.Description)) { <br /><span class="text-muted">@meal.Description</span> }
+                                        </span>
+                                        <form method="post" action="/trainer/diets/@plan.DietPlanID/meals/@meal.DietMealID/delete"
+                                              onsubmit="return confirm('Remove this meal from the plan?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger py-0" title="Remove">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <!-- ===== Add meal ===== -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i> Add Meal</h5></div>
+                <div class="card-body">
+                    <form method="post" action="/trainer/diets/@plan.DietPlanID/meals" novalidate>
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label asp-for="NewMeal.MealType" class="form-label"></label>
+                                <select asp-for="NewMeal.MealType" class="form-select">
+                                    <option value="">-- Choose --</option>
+                                    @foreach (var type in MealLogInput.MealTypes)
+                                    {
+                                        <option value="@type">@type</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label asp-for="NewMeal.MealTime" class="form-label"></label>
+                                <input asp-for="NewMeal.MealTime" type="time" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label asp-for="NewMeal.MealName" class="form-label"></label>
+                            <input asp-for="NewMeal.MealName" class="form-control" maxlength="100" placeholder="e.g. Oats with banana" />
+                        </div>
+
+                        <div class="mb-2">
+                            <label asp-for="NewMeal.Calories" class="form-label"></label>
+                            <input asp-for="NewMeal.Calories" type="number" min="0" max="3000" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="NewMeal.Description" class="form-label"></label>
+                            <input asp-for="NewMeal.Description" class="form-control" maxlength="500" placeholder="Optional – portion size, swaps, tips" />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-plus me-1"></i> Add to Plan
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ===== Plan details ===== -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-cog me-2"></i> Plan Details</h5></div>
+                <div class="card-body">
+                    <form method="post" action="/trainer/diets/@plan.DietPlanID/edit" novalidate>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="Edit.ClientID" />
+
+                        <div class="mb-2">
+                            <label asp-for="Edit.PlanName" class="form-label"></label>
+                            <input asp-for="Edit.PlanName" class="form-control" maxlength="100" />
+                            <span asp-validation-for="Edit.PlanName" class="text-danger small"></span>
+                        </div>
+                        <div class="mb-2">
+                            <label asp-for="Edit.DailyCalories" class="form-label"></label>
+                            <input asp-for="Edit.DailyCalories" type="number" min="800" max="6000" class="form-control" />
+                            <span asp-validation-for="Edit.DailyCalories" class="text-danger small"></span>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label asp-for="Edit.StartDate" class="form-label"></label>
+                                <input asp-for="Edit.StartDate" type="date" class="form-control" />
+                            </div>
+                            <div class="col-6">
+                                <label asp-for="Edit.EndDate" class="form-label"></label>
+                                <input asp-for="Edit.EndDate" type="date" class="form-control" />
+                                <span asp-validation-for="Edit.EndDate" class="text-danger small"></span>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label asp-for="Edit.Notes" class="form-label"></label>
+                            <textarea asp-for="Edit.Notes" class="form-control" rows="2" maxlength="500"></textarea>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input asp-for="Edit.IsActive" class="form-check-input" />
+                            <label asp-for="Edit.IsActive" class="form-check-label"></label>
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-save me-1"></i> Save Details
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

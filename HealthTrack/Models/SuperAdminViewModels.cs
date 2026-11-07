@@ -62,6 +62,22 @@ namespace HealthTrack.Models
         public double AverageClientsPerTrainer { get; set; }
         public List<TrainerAssignmentStatsRecord> TrainerAssignmentStats { get; set; } = new();
 
+        /// <summary>
+        /// Workout plans, popular routines and engagement for all clients
+        /// (built by AnalyticsService - used by the Workout Plans tab).
+        /// </summary>
+        public AnalyticsReport? Analytics { get; set; }
+
+        // ----- Diet management report (DietPlans, DietPlanMeals, MealLogs) -----
+        public List<AdminDietPlanRow> DietPlanRows { get; set; } = new();
+        public int TotalMealLogs { get; set; }
+
+        // ----- Progress & health metrics report (HealthMetrics, ClientProfiles) -----
+        public List<AdminClientProgressRow> ClientProgressRows { get; set; } = new();
+        public int TotalHealthRecords { get; set; }
+        public int ClientsWithGoals { get; set; }
+        public int ClientsTrackingMetrics { get; set; }
+
         // Appointment Statistics
         public int TotalAppointmentsThisPeriod { get; set; }
         public int PendingAppointmentsThisPeriod { get; set; }
@@ -106,6 +122,31 @@ namespace HealthTrack.Models
         public string Role { get; set; } = "";
         public DateTime CreatedAt { get; set; }
         public bool IsActive { get; set; }
+    }
+
+    /// <summary>One diet plan in the admin Diet Management report.</summary>
+    public class AdminDietPlanRow
+    {
+        public string ClientName { get; set; } = "";
+        public string TrainerName { get; set; } = "";
+        public string PlanName { get; set; } = "";
+        public int? DailyCalories { get; set; }
+        public int MealsPerDay { get; set; }
+        public DateTime StartDate { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    /// <summary>One client in the admin Progress & Health Metrics report.</summary>
+    public class AdminClientProgressRow
+    {
+        public string ClientName { get; set; } = "";
+        public string? Goal { get; set; }
+        public decimal? StartWeightKg { get; set; }
+        public decimal? CurrentWeightKg { get; set; }
+        public decimal? WeightChangeKg => StartWeightKg.HasValue && CurrentWeightKg.HasValue ? CurrentWeightKg - StartWeightKg : null;
+        public decimal? CurrentBmi { get; set; }
+        public int Measurements { get; set; }
+        public DateTime? LastMeasured { get; set; }
     }
 
     public class TrainerAssignmentStatsRecord

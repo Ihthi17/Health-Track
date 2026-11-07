@@ -1,0 +1,137 @@
+@model TrainerDietPlansViewModel
+
+@{
+    ViewData["Title"] = "Diet Plans";
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+
+    // Meals in the order they happen during the day
+    string[] mealOrder = { "Breakfast", "Lunch", "Snack", "Dinner" };
+    Func<string, int> MealRank = type =>
+    {
+        int index = Array.IndexOf(mealOrder, type);
+        return index >= 0 ? index : 99;
+    };
+
+    string createUrl = Model.SelectedClientId.HasValue
+        ? $"/trainer/diets/create?clientId={Model.SelectedClientId}"
+        : "/trainer/diets/create";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3">Diet Plans</h1>
+            <p class="text-muted mb-0">Create and manage nutrition plans for your clients</p>
+        </div>
+        <div class="d-flex gap-2">
+            @if (Model.Clients.Count > 0)
+            {
+                <a href="@createUrl" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i> New Diet Plan
+                </a>
+            }
+            <a href="/trainer" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success"><i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-1"></i> @TempData["ErrorMessage"]</div>
+    }
+
+    @if (Model.Clients.Count == 0)
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            You don't have any assigned clients yet. An administrator needs to assign clients to you first.
+        </div>
+    }
+    else
+    {
+        <form method="get" action="/trainer/diets" class="card border-0 shadow-sm mb-4">
+            <div class="card-body d-flex align-items-end gap-2 flex-wrap">
+                <div style="min-width: 250px;">
+                    <label class="form-label" for="clientId">Show plans for</label>
+                    <select id="clientId" name="clientId" class="form-select" onchange="this.form.submit()">
+                        <option value="">All my clients</option>
+                        @foreach (var c in Model.Clients)
+                        {
+                            <option value="@c.ClientID" selected="@(Model.SelectedClientId == c.ClientID)">@c.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </form>
+
+        @if (Model.Plans.Count == 0)
+        {
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> No diet plans yet. Click <strong>New Diet Plan</strong> to create one.
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var plan in Model.Plans)
+                {
+                    var clientName = Model.ClientNames.TryGetValue(plan.ClientID, out var n) ? n : "Client";
+                    var plannedCalories = plan.Meals.Sum(m => m.Calories ?? 0);
+
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="mb-1">@plan.PlanName</h5>
+                                    <small class="opacity-75">For: @clientName</small>
+                                </div>
+                                <span class="badge @(plan.IsActive ? "bg-success" : "bg-warning")">@(plan.IsActive ? "Active" : "Inactive")</span>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-1"><strong>Dates:</strong> @plan.StartDate.ToString("dd MMM yyyy") – @(plan.EndDate?.ToString("dd MMM yyyy") ?? "ongoing")</p>
+                                <p class="mb-1"><strong>Daily target:</strong> @(plan.DailyCalories.HasValue ? plan.DailyCalories + " kcal" : "not set")</p>
+                                <p class="mb-2"><strong>Meals planned:</strong> @plannedCalories kcal</p>
+
+                                <p class="text-muted small mb-1">Meals:</p>
+                                @if (plan.Meals.Count == 0)
+                                {
+                                    <p class="small text-muted">No meals yet.</p>
+                                }
+                                else
+                                {
+                                    <ul class="list-unstyled small mb-3">
+                                        @foreach (var meal in plan.Meals.OrderBy(m => MealRank(m.MealType)).ThenBy(m => m.MealTime).Take(5))
+                                        {
+                                            <li>
+                                                <i class="fas fa-check text-success me-1"></i>
+                                                @meal.MealType – @meal.MealName
+                                                @if (meal.Calories.HasValue) { <span class="text-muted"> (@meal.Calories kcal)</span> }
+                                            </li>
+                                        }
+                                        @if (plan.Meals.Count > 5) { <li class="text-muted">+ @(plan.Meals.Count - 5) more</li> }
+                                    </ul>
+                                }
+
+                                <a href="/trainer/diets/@plan.DietPlanID" class="btn btn-outline-primary w-100 mb-2">
+                                    <i class="fas fa-edit me-1"></i> Edit Plan
+                                </a>
+                                <form method="post" action="/trainer/diets/@plan.DietPlanID/delete"
+                                      onsubmit="return confirm('Delete this diet plan?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-danger w-100">
+                                        <i class="fas fa-trash me-1"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>

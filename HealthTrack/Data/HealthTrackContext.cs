@@ -25,6 +25,19 @@ namespace HealthTrack.Data
         public DbSet<Appointment> Appointments { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;
 
+        //  Workout, diet, progress and trainer-client tables =====
+        // Shared by the Client and Trainer modules.
+        public DbSet<Exercise> Exercises { get; set; } = null!;
+        public DbSet<WorkoutPlan> WorkoutPlans { get; set; } = null!;
+        public DbSet<WorkoutPlanItem> WorkoutPlanItems { get; set; } = null!;
+        public DbSet<WorkoutLog> WorkoutLogs { get; set; } = null!;
+        public DbSet<DietPlan> DietPlans { get; set; } = null!;
+        public DbSet<DietPlanMeal> DietPlanMeals { get; set; } = null!;
+        public DbSet<MealLog> MealLogs { get; set; } = null!;
+        public DbSet<HealthMetric> HealthMetrics { get; set; } = null!;
+        public DbSet<TrainerFeedback> TrainerFeedback { get; set; } = null!;
+        public DbSet<TrainerClientAssignment> TrainerClientAssignments { get; set; } = null!;
+
         /// <summary>
         /// Auto-creates missing ClientProfile and TrainerProfile rows for existing users.
         /// Run once on app startup or in migration.
