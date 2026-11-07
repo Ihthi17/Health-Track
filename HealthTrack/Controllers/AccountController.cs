@@ -347,7 +347,8 @@ namespace HealthTrack.Controllers
 
                 var profile = new ClientProfile
                 {
-                    ClientProfileID = user.UserID  // ClientID is the UserID foreign key
+                    ClientProfileID = user.UserID,  // ClientID is the UserID foreign key
+                    UserID = user.UserID            // also link the profile to the user account
                 };
 
                 _db.ClientProfiles.Add(profile);

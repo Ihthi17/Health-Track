@@ -311,15 +311,38 @@
             </div>
         </div>
 
-        <!-- Trainer Assignments Report Tab -->
+        <!-- Trainer Assignments Report Tab (real data from TrainerClientAssignments) -->
         <div class="tab-pane fade" id="trainers-report" role="tabpanel">
             <div class="card shadow">
                 <div class="card-header bg-secondary text-white">
                     <h6 class="mb-0"><i class="fas fa-sitemap me-2"></i> Trainer Assignment Report</h6>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i> Trainer assignment data will be populated once trainer-client assignments are tracked in the system.
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="card border-left-primary"><div class="card-body">
+                                <div class="text-muted small">Active Assignments</div>
+                                <h3>@Model.TotalTrainerAssignments</h3>
+                            </div></div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-left-success"><div class="card-body">
+                                <div class="text-muted small">Clients With a Trainer</div>
+                                <h3>@Model.TotalAssignedClients</h3>
+                            </div></div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-left-warning"><div class="card-body">
+                                <div class="text-muted small">Clients Without a Trainer</div>
+                                <h3>@Model.TotalUnassignedClients</h3>
+                            </div></div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-left-info"><div class="card-body">
+                                <div class="text-muted small">Avg Clients per Trainer</div>
+                                <h3>@Model.AverageClientsPerTrainer</h3>
+                            </div></div>
+                        </div>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover table-striped">
@@ -333,109 +356,162 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted">No data available</td>
-                                </tr>
+                                @if (!Model.TrainerAssignmentStats.Any())
+                                {
+                                    <tr><td colspan="5" class="text-center text-muted">No trainers found</td></tr>
+                                }
+                                @foreach (var t in Model.TrainerAssignmentStats)
+                                {
+                                    var rate = t.TotalAppointments > 0 ? (t.CompletedAppointments * 100.0 / t.TotalAppointments) : 0;
+                                    <tr>
+                                        <td><strong>@t.TrainerName</strong></td>
+                                        <td>@t.ClientCount</td>
+                                        <td>@t.TotalAppointments</td>
+                                        <td>@t.CompletedAppointments</td>
+                                        <td>@rate.ToString("0")%</td>
+                                    </tr>
+                                }
                             </tbody>
                         </table>
                     </div>
+                    <a href="/superadmin/trainer-assignments" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-user-plus me-1"></i> Manage Assignments
+                    </a>
                 </div>
             </div>
         </div>
 
-        <!-- Workout Plans Report Tab -->
+        <!-- Workout Plans Report Tab (real data from AnalyticsService, last 30 days) -->
         <div class="tab-pane fade" id="workouts-report" role="tabpanel">
             <div class="card shadow">
-                <div class="card-header bg-secondary text-white">
-                    <h6 class="mb-0"><i class="fas fa-dumbbell me-2"></i> Workout Plans Report</h6>
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-dumbbell me-2"></i> Workout Plans Report (last 30 days)</h6>
+                    <a href="/superadmin/analytics" class="btn btn-sm btn-light">
+                        <i class="fas fa-chart-pie me-1"></i> Full Analytics
+                    </a>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i> Workout plan and logs data will be populated once these features are integrated.
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <div class="card border-left-primary">
-                                <div class="card-body">
+                    @{ var a = Model.Analytics; }
+                    @if (a == null)
+                    {
+                        <div class="alert alert-info">No workout data available.</div>
+                    }
+                    else
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <div class="card border-left-primary"><div class="card-body">
                                     <div class="text-muted small">Total Workout Plans</div>
-                                    <h3>0</h3>
-                                </div>
+                                    <h3>@a.Plans.Count</h3>
+                                </div></div>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card border-left-success">
-                                <div class="card-body">
+                            <div class="col-md-3">
+                                <div class="card border-left-success"><div class="card-body">
                                     <div class="text-muted small">Active Plans</div>
-                                    <h3>0</h3>
-                                </div>
+                                    <h3>@a.Plans.Count(p => p.IsActive)</h3>
+                                </div></div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-left-info"><div class="card-body">
+                                    <div class="text-muted small">Avg Plan Completion</div>
+                                    <h3>@(a.AveragePlanCompletion.HasValue ? a.AveragePlanCompletion + "%" : "–")</h3>
+                                </div></div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-left-warning"><div class="card-body">
+                                    <div class="text-muted small">Client Engagement</div>
+                                    <h3>@a.EngagementPercent%</h3>
+                                    <div class="small text-muted">@a.ActiveClients of @a.TotalClients active (7 days)</div>
+                                </div></div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="card border-left-info">
-                                <div class="card-body">
-                                    <div class="text-muted small">Completed Plans</div>
-                                    <h3>0</h3>
-                                </div>
-                            </div>
+
+                        <div class="table-responsive mb-4">
+                            <table class="table table-hover table-striped">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Client</th>
+                                        <th>Plan Name</th>
+                                        <th>Trainer</th>
+                                        <th>Done / Scheduled</th>
+                                        <th>Completion</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (!a.Plans.Any())
+                                    {
+                                        <tr><td colspan="6" class="text-center text-muted">No workout plans yet</td></tr>
+                                    }
+                                    @foreach (var p in a.Plans)
+                                    {
+                                        <tr>
+                                            <td>@p.ClientName</td>
+                                            <td><strong>@p.PlanName</strong></td>
+                                            <td>@p.TrainerName</td>
+                                            <td>@p.Done / @p.Scheduled</td>
+                                            <td>@(p.CompletionPercent.HasValue ? p.CompletionPercent + "%" : "–")</td>
+                                            <td><span class="badge @(p.IsActive ? "bg-success" : "bg-secondary")">@(p.IsActive ? "Active" : "Inactive")</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover table-striped">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Client</th>
-                                    <th>Plan Name</th>
-                                    <th>Start Date</th>
-                                    <th>End Date</th>
-                                    <th>Exercises Count</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted">No data available</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+
+                        <h6><i class="fas fa-fire me-1"></i> Most Popular Exercises</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr><th>Exercise</th><th>Category</th><th>Times Logged</th><th>Total Minutes</th><th>Clients</th></tr>
+                                </thead>
+                                <tbody>
+                                    @if (!a.PopularExercises.Any())
+                                    {
+                                        <tr><td colspan="5" class="text-center text-muted">No workouts logged yet</td></tr>
+                                    }
+                                    @foreach (var e in a.PopularExercises)
+                                    {
+                                        <tr>
+                                            <td>@e.ExerciseName</td>
+                                            <td>@e.Category</td>
+                                            <td>@e.TimesLogged</td>
+                                            <td>@e.TotalMinutes</td>
+                                            <td>@e.ClientCount</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
 
-        <!-- Diet Management Report Tab -->
+        <!-- Diet Management Report Tab (real data from DietPlans / MealLogs) -->
         <div class="tab-pane fade" id="diet-report" role="tabpanel">
             <div class="card shadow">
                 <div class="card-header bg-secondary text-white">
                     <h6 class="mb-0"><i class="fas fa-utensils me-2"></i> Diet Management Report</h6>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i> Diet plan data will be populated once diet management features are integrated.
-                    </div>
                     <div class="row mb-3">
                         <div class="col-md-4">
-                            <div class="card border-left-primary">
-                                <div class="card-body">
-                                    <div class="text-muted small">Total Diet Plans</div>
-                                    <h3>0</h3>
-                                </div>
-                            </div>
+                            <div class="card border-left-primary"><div class="card-body">
+                                <div class="text-muted small">Total Diet Plans</div>
+                                <h3>@Model.DietPlanRows.Count</h3>
+                            </div></div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card border-left-success">
-                                <div class="card-body">
-                                    <div class="text-muted small">Active Plans</div>
-                                    <h3>0</h3>
-                                </div>
-                            </div>
+                            <div class="card border-left-success"><div class="card-body">
+                                <div class="text-muted small">Active Plans</div>
+                                <h3>@Model.DietPlanRows.Count(d => d.IsActive)</h3>
+                            </div></div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card border-left-info">
-                                <div class="card-body">
-                                    <div class="text-muted small">Nutrition Tracked</div>
-                                    <h3>0</h3>
-                                </div>
-                            </div>
+                            <div class="card border-left-info"><div class="card-body">
+                                <div class="text-muted small">Meals Logged by Clients</div>
+                                <h3>@Model.TotalMealLogs</h3>
+                            </div></div>
                         </div>
                     </div>
                     <div class="table-responsive">
@@ -444,6 +520,7 @@
                                 <tr>
                                     <th>Client</th>
                                     <th>Plan Name</th>
+                                    <th>Trainer</th>
                                     <th>Calories Target</th>
                                     <th>Meals Per Day</th>
                                     <th>Start Date</th>
@@ -451,9 +528,22 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted">No data available</td>
-                                </tr>
+                                @if (!Model.DietPlanRows.Any())
+                                {
+                                    <tr><td colspan="7" class="text-center text-muted">No diet plans yet</td></tr>
+                                }
+                                @foreach (var d in Model.DietPlanRows)
+                                {
+                                    <tr>
+                                        <td>@d.ClientName</td>
+                                        <td><strong>@d.PlanName</strong></td>
+                                        <td>@d.TrainerName</td>
+                                        <td>@(d.DailyCalories.HasValue ? d.DailyCalories + " kcal" : "–")</td>
+                                        <td>@d.MealsPerDay</td>
+                                        <td>@d.StartDate.ToString("MMM dd, yyyy")</td>
+                                        <td><span class="badge @(d.IsActive ? "bg-success" : "bg-secondary")">@(d.IsActive ? "Active" : "Inactive")</span></td>
+                                    </tr>
+                                }
                             </tbody>
                         </table>
                     </div>
@@ -461,48 +551,38 @@
             </div>
         </div>
 
-        <!-- Progress & Goals Report Tab -->
+
+        <!-- Progress & Goals Report Tab (real data from HealthMetrics / ClientProfiles) -->
         <div class="tab-pane fade" id="progress-report" role="tabpanel">
             <div class="card shadow">
                 <div class="card-header bg-secondary text-white">
-                    <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i> Progress & Health Metrics Report</h6>
+                    <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i> Progress &amp; Health Metrics Report</h6>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i> Health metrics, progress tracking, and goals will be populated once these features are integrated.
-                    </div>
                     <div class="row mb-3">
                         <div class="col-md-3">
-                            <div class="card border-left-primary">
-                                <div class="card-body">
-                                    <div class="text-muted small">Goals Tracked</div>
-                                    <h3>0</h3>
-                                </div>
-                            </div>
+                            <div class="card border-left-primary"><div class="card-body">
+                                <div class="text-muted small">Clients With Goals</div>
+                                <h3>@Model.ClientsWithGoals</h3>
+                            </div></div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card border-left-success">
-                                <div class="card-body">
-                                    <div class="text-muted small">Goals Achieved</div>
-                                    <h3>0</h3>
-                                </div>
-                            </div>
+                            <div class="card border-left-success"><div class="card-body">
+                                <div class="text-muted small">Clients Tracking Metrics</div>
+                                <h3>@Model.ClientsTrackingMetrics</h3>
+                            </div></div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card border-left-info">
-                                <div class="card-body">
-                                    <div class="text-muted small">Health Records</div>
-                                    <h3>0</h3>
-                                </div>
-                            </div>
+                            <div class="card border-left-info"><div class="card-body">
+                                <div class="text-muted small">Health Records</div>
+                                <h3>@Model.TotalHealthRecords</h3>
+                            </div></div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card border-left-warning">
-                                <div class="card-body">
-                                    <div class="text-muted small">Metrics Tracked</div>
-                                    <h3>0</h3>
-                                </div>
-                            </div>
+                            <div class="card border-left-warning"><div class="card-body">
+                                <div class="text-muted small">Workouts Logged (30 days)</div>
+                                <h3>@(Model.Analytics?.WorkoutsLogged ?? 0)</h3>
+                            </div></div>
                         </div>
                     </div>
                     <div class="table-responsive">
@@ -511,23 +591,49 @@
                                 <tr>
                                     <th>Client</th>
                                     <th>Goal</th>
-                                    <th>Target</th>
-                                    <th>Current</th>
-                                    <th>Progress %</th>
-                                    <th>Deadline</th>
-                                    <th>Status</th>
+                                    <th>Start Weight</th>
+                                    <th>Current Weight</th>
+                                    <th>Change</th>
+                                    <th>BMI</th>
+                                    <th>Records</th>
+                                    <th>Last Measured</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted">No data available</td>
-                                </tr>
+                                @if (!Model.ClientProgressRows.Any())
+                                {
+                                    <tr><td colspan="8" class="text-center text-muted">No clients yet</td></tr>
+                                }
+                                @foreach (var r in Model.ClientProgressRows)
+                                {
+                                    <tr>
+                                        <td>@r.ClientName</td>
+                                        <td class="small">@(r.Goal ?? "–")</td>
+                                        <td>@(r.StartWeightKg.HasValue ? r.StartWeightKg.Value.ToString("0.0") + " kg" : "–")</td>
+                                        <td>@(r.CurrentWeightKg.HasValue ? r.CurrentWeightKg.Value.ToString("0.0") + " kg" : "–")</td>
+                                        <td>
+                                            @if (r.WeightChangeKg.HasValue)
+                                            {
+                                                var change = r.WeightChangeKg.Value;
+                                                <span class="badge @(change <= 0 ? "bg-success" : "bg-danger")">@(change > 0 ? "+" : "")@change.ToString("0.0") kg</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">–</span>
+                                            }
+                                        </td>
+                                        <td>@(r.CurrentBmi?.ToString("0.0") ?? "–")</td>
+                                        <td>@r.Measurements</td>
+                                        <td>@(r.LastMeasured?.ToString("MMM dd, yyyy") ?? "–")</td>
+                                    </tr>
+                                }
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
@@ -590,7 +696,8 @@
         });
 
         exportBtn.addEventListener('click', function () {
-            const activeTab = document.querySelector('.nav-link.active');
+            // Export the report tab that is currently open (only look inside the report tabs)
+            const activeTab = document.querySelector('.nav-tabs .nav-link.active');
             const reportType = activeTab.id.replace('-tab', '');
             const format = exportFormat.value;
             const params = new URLSearchParams({

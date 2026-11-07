@@ -1,0 +1,77 @@
+@model CreateWorkoutPlanViewModel
+
+@{
+    ViewData["Title"] = "New Workout Plan";
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">New Workout Plan</h1>
+            <p class="text-muted mb-0">Step 1: plan details. Next you'll add the exercises.</p>
+        </div>
+        <a href="/trainer/workouts" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Back to Plans
+        </a>
+    </div>
+
+    @if (Model.Clients.Count == 0)
+    {
+        <div class="alert alert-info">You don't have any assigned clients yet.</div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm" style="max-width: 720px;">
+            <div class="card-body">
+                <form method="post" action="/trainer/workouts/create" novalidate>
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.ClientID" class="form-label"></label>
+                        <select asp-for="Input.ClientID" class="form-select">
+                            <option value="">-- Choose a client --</option>
+                            @foreach (var c in Model.Clients)
+                            {
+                                <option value="@c.ClientID">@c.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.PlanName" class="form-label"></label>
+                        <input asp-for="Input.PlanName" class="form-control" maxlength="100" placeholder="e.g. Beginner Strength – 4 weeks" />
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Input.StartDate" class="form-label"></label>
+                            <input asp-for="Input.StartDate" type="date" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.EndDate" class="form-label"></label>
+                            <input asp-for="Input.EndDate" type="date" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Notes" class="form-label"></label>
+                        <textarea asp-for="Input.Notes" class="form-control" rows="3" maxlength="500"
+                                  placeholder="e.g. Warm up for 5 minutes before every session"></textarea>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input asp-for="Input.IsActive" class="form-check-input" />
+                        <label asp-for="Input.IsActive" class="form-check-label"></label>
+                        <div class="small text-muted">Only one plan per client can be active – any other active plan will be switched off.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-arrow-right me-1"></i> Create &amp; Add Exercises
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+</div>

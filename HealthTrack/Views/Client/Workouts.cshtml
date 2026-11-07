@@ -1,0 +1,220 @@
+@model ClientWorkoutsViewModel
+
+@{
+    ViewData["Title"] = "My Workouts";
+    Layout = "~/Views/Shared/_ClientLayout.cshtml";
+
+    // Show the week Monday -> Sunday. Numbers match .NET DayOfWeek (0 = Sunday).
+    var weekOrder = new[] { 1, 2, 3, 4, 5, 6, 0 };
+    string[] dayNames = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+    int todayNumber = (int)DateTime.Today.DayOfWeek;
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">My Workouts</h1>
+    <p class="text-muted mb-0">See the plan your trainer made for you and log the workouts you complete.</p>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success"><i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-1"></i> @TempData["ErrorMessage"]</div>
+}
+
+<div class="row g-3 mb-4">
+    <!-- ===== Trainer's plan (read-only) ===== -->
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header"><h5><i class="fas fa-clipboard-list me-1"></i> My Workout Plan</h5></div>
+            <div class="card-body">
+                @if (Model.ActivePlan == null)
+                {
+                    <p class="text-muted mb-0">
+                        Your trainer hasn't assigned a workout plan yet. You can still log your own workouts using the form.
+                    </p>
+                }
+                else
+                {
+                    <h6 class="mb-1">@Model.ActivePlan.PlanName</h6>
+                    <p class="small text-muted mb-3">
+                        @if (!string.IsNullOrEmpty(Model.PlanTrainerName)) { <span>By @Model.PlanTrainerName · </span> }
+                        From @Model.ActivePlan.StartDate.ToString("dd MMM yyyy")
+                        @if (Model.ActivePlan.EndDate.HasValue) { <span> to @Model.ActivePlan.EndDate.Value.ToString("dd MMM yyyy")</span> }
+                    </p>
+                    @if (!string.IsNullOrEmpty(Model.ActivePlan.Notes))
+                    {
+                        <div class="alert alert-info small py-2"><i class="fas fa-sticky-note me-1"></i> @Model.ActivePlan.Notes</div>
+                    }
+
+                    @foreach (var day in weekOrder)
+                    {
+                        var items = Model.ActivePlan.Items.Where(i => i.DayOfWeek == day).OrderBy(i => i.ReminderTime).ToList();
+                        bool isToday = day == todayNumber;
+
+                        <div class="border rounded p-2 mb-2 @(isToday ? "border-success bg-light" : "")">
+                            <div class="fw-semibold mb-1">
+                                @(dayNames[day])
+                                @if (isToday) { <span class="badge bg-success ms-1">Today</span> }
+                            </div>
+
+                            @if (items.Count == 0)
+                            {
+                                <small class="text-muted">Rest day</small>
+                            }
+                            else
+                            {
+                                @foreach (var item in items)
+                                {
+                                    bool done = isToday && Model.PlanItemsDoneToday.Contains(item.PlanItemID);
+                                    <div class="d-flex justify-content-between align-items-center small py-1">
+                                        <span>
+                                            <strong>@(item.Exercise?.ExerciseName ?? "Exercise")</strong>
+                                            @if (item.Sets.HasValue && item.Reps.HasValue) { <span class="text-muted"> · @item.Sets × @item.Reps</span> }
+                                            @if (item.DurationMin.HasValue) { <span class="text-muted"> · @item.DurationMin min</span> }
+                                            @if (item.ReminderTime.HasValue) { <span class="text-muted"> · <i class="far fa-clock"></i> @(item.ReminderTime.Value.ToString("hh\\:mm"))</span> }
+                                        </span>
+                                        @if (isToday)
+                                        {
+                                            if (done)
+                                            {
+                                                <span class="badge bg-success"><i class="fas fa-check"></i> Done</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="/client/workouts?planItemId=@item.PlanItemID#log-form" class="btn btn-sm btn-outline-primary py-0">Log it</a>
+                                            }
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Log a workout form ===== -->
+    <div class="col-lg-5">
+        <div class="card h-100" id="log-form">
+            <div class="card-header"><h5><i class="fas fa-plus-circle me-1"></i> Log a Workout</h5></div>
+            <div class="card-body">
+                <form asp-action="LogWorkout" method="post" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="NewLog.PlanItemID" />
+
+                    <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+
+                    <div class="mb-2">
+                        <label asp-for="NewLog.LogDate" class="form-label"></label>
+                        <input asp-for="NewLog.LogDate" type="date" class="form-control"
+                               max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+
+                    <div class="mb-2">
+                        <label asp-for="NewLog.ExerciseID" class="form-label"></label>
+                        <select asp-for="NewLog.ExerciseID" class="form-select">
+                            <option value="">-- Choose an exercise --</option>
+                            @foreach (var group in Model.Exercises.GroupBy(e => e.Category ?? "Other"))
+                            {
+                                <optgroup label="@group.Key">
+                                    @foreach (var ex in group)
+                                    {
+                                        <option value="@ex.ExerciseID" selected="@(Model.NewLog.ExerciseID == ex.ExerciseID)">@ex.ExerciseName</option>
+                                    }
+                                </optgroup>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-4">
+                            <label asp-for="NewLog.Sets" class="form-label"></label>
+                            <input asp-for="NewLog.Sets" type="number" min="1" max="50" class="form-control" />
+                        </div>
+                        <div class="col-4">
+                            <label asp-for="NewLog.Reps" class="form-label"></label>
+                            <input asp-for="NewLog.Reps" type="number" min="1" max="500" class="form-control" />
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label" for="NewLog_DurationMin">Minutes</label>
+                            <input asp-for="NewLog.DurationMin" type="number" min="1" max="600" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label asp-for="NewLog.CaloriesBurned" class="form-label"></label>
+                        <input asp-for="NewLog.CaloriesBurned" type="number" step="1" min="0" max="5000" class="form-control"
+                               placeholder="Leave blank to estimate automatically" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="NewLog.Notes" class="form-label"></label>
+                        <input asp-for="NewLog.Notes" class="form-control" maxlength="255" placeholder="How did it feel? (optional)" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-save me-1"></i> Save Workout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Recent workouts ===== -->
+<div class="card">
+    <div class="card-header"><h5><i class="fas fa-history me-1"></i> Recent Workouts</h5></div>
+    <div class="card-body p-0">
+        @if (Model.RecentLogs.Count == 0)
+        {
+            <p class="text-muted p-4 mb-0">No workouts logged yet.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Exercise</th>
+                            <th>Sets × Reps</th>
+                            <th>Minutes</th>
+                            <th>Calories</th>
+                            <th>Notes</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in Model.RecentLogs)
+                        {
+                            <tr>
+                                <td>@log.LogDate.ToString("dd MMM yyyy")</td>
+                                <td>
+                                    @(log.Exercise?.ExerciseName ?? "–")
+                                    @if (log.PlanItemID.HasValue) { <span class="badge bg-info ms-1" title="Part of your trainer's plan">Plan</span> }
+                                </td>
+                                <td>@(log.Sets.HasValue && log.Reps.HasValue ? $"{log.Sets} × {log.Reps}" : "–")</td>
+                                <td>@(log.DurationMin?.ToString() ?? "–")</td>
+                                <td>@(log.CaloriesBurned?.ToString("0") ?? "–")</td>
+                                <td class="small text-muted">@(log.Notes ?? "")</td>
+                                <td class="text-end">
+                                    <form asp-action="DeleteWorkoutLog" asp-route-id="@log.WorkoutLogID" method="post"
+                                          onsubmit="return confirm('Delete this workout?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

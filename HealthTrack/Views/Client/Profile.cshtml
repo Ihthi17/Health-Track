@@ -1,0 +1,189 @@
+@model ClientProfilePageViewModel
+
+@{
+    ViewData["Title"] = "My Profile";
+    Layout = "~/Views/Shared/_ClientLayout.cshtml";
+    var d = Model.Details;
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">My Profile</h1>
+    <p class="text-muted mb-0">Keep your details up to date so your trainer can plan the right programme for you.</p>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success"><i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-1"></i> @TempData["ErrorMessage"]</div>
+}
+
+<div class="row g-3">
+    <!-- ===== Account summary ===== -->
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-body text-center">
+                <i class="fas fa-user-circle fa-5x mb-3" style="color: var(--accent-teal);"></i>
+                <h4 class="mb-1">@d.FirstName @d.LastName</h4>
+                <p class="text-muted mb-3">@Model.Email</p>
+
+                <ul class="list-group list-group-flush text-start small">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Member since</span>
+                        <span>@Model.MemberSince.ToString("dd MMM yyyy")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Trainer</span>
+                        <span>@(Model.TrainerName ?? "Not assigned yet")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Age</span>
+                        <span>@(Model.Age.HasValue ? Model.Age + " years" : "–")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Height</span>
+                        <span>@(d.HeightCm.HasValue ? d.HeightCm.Value.ToString("0.#") + " cm" : "–")</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ===== Change password ===== -->
+        <div class="card">
+            <div class="card-header"><h5><i class="fas fa-lock me-1"></i> Change Password</h5></div>
+            <div class="card-body">
+                <form asp-action="ChangePassword" method="post" novalidate autocomplete="off">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-2">
+                        <label asp-for="Password.CurrentPassword" class="form-label"></label>
+                        <input asp-for="Password.CurrentPassword" class="form-control" autocomplete="current-password" />
+                        <span asp-validation-for="Password.CurrentPassword" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-2">
+                        <label asp-for="Password.NewPassword" class="form-label"></label>
+                        <input asp-for="Password.NewPassword" class="form-control" autocomplete="new-password" />
+                        <span asp-validation-for="Password.NewPassword" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Password.ConfirmPassword" class="form-label"></label>
+                        <input asp-for="Password.ConfirmPassword" class="form-control" autocomplete="new-password" />
+                        <span asp-validation-for="Password.ConfirmPassword" class="text-danger small"></span>
+                    </div>
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-key me-1"></i> Change Password
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Personal details ===== -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><h5><i class="fas fa-id-card me-1"></i> Personal Details</h5></div>
+            <div class="card-body">
+                <form asp-action="UpdateProfile" method="post" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6">
+                            <label asp-for="Details.FirstName" class="form-label"></label>
+                            <input asp-for="Details.FirstName" class="form-control" maxlength="50" />
+                            <span asp-validation-for="Details.FirstName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Details.LastName" class="form-label"></label>
+                            <input asp-for="Details.LastName" class="form-control" maxlength="50" />
+                            <span asp-validation-for="Details.LastName" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-4">
+                            <label asp-for="Details.Phone" class="form-label"></label>
+                            <input asp-for="Details.Phone" class="form-control" maxlength="20" placeholder="e.g. +94 77 123 4567" />
+                            <span asp-validation-for="Details.Phone" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Details.DateOfBirth" class="form-label"></label>
+                            <input asp-for="Details.DateOfBirth" type="date" class="form-control"
+                                   max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="Details.DateOfBirth" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Details.Gender" class="form-label"></label>
+                            <select asp-for="Details.Gender" class="form-select">
+                                <option value="">-- Choose --</option>
+                                @foreach (var g in ProfileDetailsInput.Genders)
+                                {
+                                    <option value="@g">@g</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Details.Gender" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="Details.HeightCm" class="form-label"></label>
+                            <input asp-for="Details.HeightCm" type="number" step="0.1" min="50" max="250" class="form-control" />
+                            <span asp-validation-for="Details.HeightCm" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-8 d-flex align-items-end">
+                            <p class="small text-muted mb-1">
+                                <i class="fas fa-info-circle"></i> Your height is used to calculate BMI on the Progress page.
+                            </p>
+                        </div>
+                    </div>
+
+                    <h6 class="text-muted mt-3">Address</h6>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6">
+                            <label asp-for="Details.AddressLine1" class="form-label"></label>
+                            <input asp-for="Details.AddressLine1" class="form-control" maxlength="150" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Details.AddressLine2" class="form-label"></label>
+                            <input asp-for="Details.AddressLine2" class="form-control" maxlength="150" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="Details.City" class="form-label"></label>
+                            <input asp-for="Details.City" class="form-control" maxlength="80" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Details.StateProvince" class="form-label"></label>
+                            <input asp-for="Details.StateProvince" class="form-control" maxlength="80" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Details.PostalCode" class="form-label"></label>
+                            <input asp-for="Details.PostalCode" class="form-control" maxlength="20" />
+                        </div>
+                    </div>
+
+                    <h6 class="text-muted mt-3">Health &amp; goals</h6>
+                    <div class="mb-2">
+                        <label asp-for="Details.GoalDescription" class="form-label"></label>
+                        <input asp-for="Details.GoalDescription" class="form-control" maxlength="255"
+                               placeholder="e.g. Lose 5 kg and run 5 km by March" />
+                        <span asp-validation-for="Details.GoalDescription" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Details.MedicalNotes" class="form-label"></label>
+                        <textarea asp-for="Details.MedicalNotes" class="form-control" rows="3" maxlength="500"
+                                  placeholder="e.g. Mild asthma, old knee injury"></textarea>
+                        <span asp-validation-for="Details.MedicalNotes" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Save Details
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

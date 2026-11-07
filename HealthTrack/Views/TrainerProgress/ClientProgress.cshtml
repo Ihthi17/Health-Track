@@ -1,0 +1,164 @@
+@model TrainerProgressViewModel
+
+@{
+    ViewData["Title"] = "Client Progress";
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+
+    // "2 days ago" style text for the Last Update column
+    Func<DateTime?, string> Ago = d =>
+    {
+        if (!d.HasValue) return "No activity";
+        int diff = (DateTime.Today - d.Value.Date).Days;
+        return diff <= 0 ? "Today" : diff == 1 ? "Yesterday" : $"{diff} days ago";
+    };
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">Client Progress Tracking</h1>
+            <p class="text-muted mb-0">Monitor and track your clients' progress</p>
+        </div>
+        <a href="/trainer" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Period filter -->
+    <form method="get" action="/trainer/progress" class="card border-0 shadow-sm mb-4">
+        <div class="card-body d-flex align-items-end gap-2 flex-wrap">
+            <div style="min-width: 220px;">
+                <label class="form-label" for="days">Time period</label>
+                <select id="days" name="days" class="form-select" onchange="this.form.submit()">
+                    <option value="7" selected="@(Model.Days == 7)">Last 7 days</option>
+                    <option value="30" selected="@(Model.Days == 30)">Last 30 days</option>
+                    <option value="90" selected="@(Model.Days == 90)">Last 90 days</option>
+                </select>
+            </div>
+        </div>
+    </form>
+
+    @if (Model.Rows.Count == 0)
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i> You don't have any assigned clients yet.
+        </div>
+    }
+    else
+    {
+        <!-- Summary cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-sm-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted">Average Weight Change</h6>
+                        @{ var avg = Model.AverageWeightChange; }
+                        <h3 class="@(avg < 0 ? "text-success" : avg > 0 ? "text-danger" : "")">
+                            @(avg.HasValue ? (avg > 0 ? "+" : "") + avg.Value.ToString("0.0") + " kg" : "–")
+                        </h3>
+                        <small class="text-muted">Over the last @Model.Days days</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted">Plan Completion</h6>
+                        <h3 class="text-info">@(Model.AverageCompletion.HasValue ? Model.AverageCompletion + "%" : "–")</h3>
+                        <small class="text-muted">Average across clients with a plan</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted">Workouts Logged</h6>
+                        <h3 class="text-warning">@Model.TotalWorkouts</h3>
+                        <small class="text-muted">By all your clients</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted">Active Clients</h6>
+                        <h3 class="text-primary">@Model.ActiveClients</h3>
+                        <small class="text-muted">Currently assigned to you</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Per-client table -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header"><h5 class="mb-0"><i class="fas fa-chart-line me-2"></i> Individual Client Progress</h5></div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Client Name</th>
+                                <th>Current Weight</th>
+                                <th>Weight Change</th>
+                                <th>Workouts Done</th>
+                                <th>Plan Completion</th>
+                                <th>Last Update</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in Model.Rows)
+                            {
+                                var pct = r.CompletionPercent;
+                                var barColour = pct >= 80 ? "bg-success" : pct >= 50 ? "bg-warning" : "bg-danger";
+                                <tr>
+                                    <td><strong>@r.Name</strong></td>
+                                    <td>@(r.CurrentWeightKg.HasValue ? r.CurrentWeightKg.Value.ToString("0.0") + " kg" : "–")</td>
+                                    <td>
+                                        @if (r.WeightChangeKg.HasValue)
+                                        {
+                                            var change = r.WeightChangeKg.Value;
+                                            <span class="badge @(change <= 0 ? "bg-success" : "bg-danger")">
+                                                <i class="fas @(change <= 0 ? "fa-arrow-down" : "fa-arrow-up")"></i>
+                                                @(change > 0 ? "+" : "")@change.ToString("0.0") kg
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">–</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @r.WorkoutsLogged
+                                        @if (r.PlanItemsScheduled > 0) { <small class="text-muted">(@r.PlanItemsDone / @r.PlanItemsScheduled planned)</small> }
+                                    </td>
+                                    <td style="min-width: 140px;">
+                                        @if (pct.HasValue)
+                                        {
+                                            <div class="progress" style="height: 18px;">
+                                                <div class="progress-bar @barColour" role="progressbar" style="width: @pct%;">@pct%</div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">No active plan</small>
+                                        }
+                                    </td>
+                                    <td><small class="text-muted">@(Ago(r.LastActivity))</small></td>
+                                    <td>
+                                        <a href="/trainer/progress/@r.ClientID?days=@Model.Days" class="btn btn-sm btn-outline-primary" title="View progress and give feedback">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="small text-muted mb-0">
+                    <i class="fas fa-info-circle"></i> Plan completion = exercises from your plan the client logged ÷ exercises scheduled in the period.
+                </p>
+            </div>
+        </div>
+    }
+</div>

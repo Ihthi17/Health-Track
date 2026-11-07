@@ -24,7 +24,20 @@ namespace HealthTrack.Controllers
         private async Task<TrainerProfile?> GetCurrentTrainerAsync()
         {
             var userId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
-            return await _context.TrainerProfiles.FirstOrDefaultAsync(t => t.UserID == userId);
+            // TrainerID is a foreign key to Users.UserID, so match on either column
+            return await _context.TrainerProfiles.FirstOrDefaultAsync(t => t.UserID == userId || t.TrainerProfileID == userId);
+        }
+
+        /// <summary>
+        /// ClientIDs of the clients ACTIVELY assigned to this trainer
+        /// (TrainerClientAssignments, managed by the admin).
+        /// Used so a trainer only sees and manages their own clients.
+        /// </summary>
+        private IQueryable<int> AssignedClientIds(int trainerId)
+        {
+            return _context.TrainerClientAssignments
+                .Where(a => a.TrainerID == trainerId && a.IsActive)
+                .Select(a => a.ClientID);
         }
 
         #region Dashboard
@@ -41,14 +54,14 @@ namespace HealthTrack.Controllers
 
                 var viewModel = new TrainerDashboardViewModel();
 
-                // Get assigned clients
-                viewModel.AssignedClientsCount = await _context.ClientProfiles.CountAsync();
+                // Count only the clients assigned to this trainer
+                viewModel.AssignedClientsCount = await AssignedClientIds(trainer.TrainerProfileID).CountAsync();
 
                 // Get upcoming appointments
                 viewModel.UpcomingAppointments = await _context.Appointments
                     .Include(a => a.Client).ThenInclude(c => c!.User)
                     .Where(a => a.TrainerID == trainer.TrainerProfileID && 
-                           a.StartTime > DateTime.UtcNow && 
+                           a.StartTime > DateTime.Now && 
                            a.Status != "Cancelled")
                     .OrderBy(a => a.StartTime)
                     .Take(5)
@@ -87,14 +100,18 @@ namespace HealthTrack.Controllers
                     return Unauthorized();
 
                 const int pageSize = 10;
+                var assignedIds = AssignedClientIds(trainer.TrainerProfileID);
+
+                // Only this trainer's assigned clients
                 var clients = await _context.ClientProfiles
                     .Include(c => c.User)
+                    .Where(c => assignedIds.Contains(c.ClientProfileID))
                     .OrderBy(c => c.User!.FirstName)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                var totalClients = await _context.ClientProfiles.CountAsync();
+                var totalClients = await assignedIds.CountAsync();
                 ViewBag.TotalPages = (int)Math.Ceiling((double)totalClients / pageSize);
                 ViewBag.CurrentPage = page;
 
@@ -113,6 +130,15 @@ namespace HealthTrack.Controllers
         {
             try
             {
+                var trainer = await GetCurrentTrainerAsync();
+                if (trainer == null)
+                    return Unauthorized();
+
+                // Security: a trainer may only open clients assigned to them
+                bool isAssigned = await AssignedClientIds(trainer.TrainerProfileID).ContainsAsync(id);
+                if (!isAssigned)
+                    return NotFound();
+
                 var client = await _context.ClientProfiles
                     .Include(c => c.User)
                     .FirstOrDefaultAsync(c => c.ClientProfileID == id);
@@ -122,7 +148,14 @@ namespace HealthTrack.Controllers
 
                 var viewModel = new ClientDetailViewModel
                 {
-                    ClientProfile = client
+                    ClientProfile = client,
+
+                    // This client's appointments with THIS trainer, newest first
+                    Appointments = await _context.Appointments
+                        .Where(a => a.ClientID == id && a.TrainerID == trainer.TrainerProfileID)
+                        .OrderByDescending(a => a.StartTime)
+                        .Take(10)
+                        .ToListAsync()
                 };
 
                 return View(viewModel);
@@ -173,35 +206,11 @@ namespace HealthTrack.Controllers
 
         #endregion
 
-        #region Workout Plans
+        // Workout Plans: moved to TrainerWorkoutPlansController (real database version).
 
-        [HttpGet("workouts")]
-        public IActionResult WorkoutPlans()
-        {
-            return View();
-        }
+        // Diet Plans: moved to TrainerDietPlansController (real database version).
 
-        #endregion
-
-        #region Diet Plans
-
-        [HttpGet("diets")]
-        public IActionResult DietPlans()
-        {
-            return View();
-        }
-
-        #endregion
-
-        #region Progress
-
-        [HttpGet("progress")]
-        public IActionResult ClientProgress()
-        {
-            return View();
-        }
-
-        #endregion
+        // Client Progress: moved to TrainerProgressController (real database version + feedback).
 
         #region Profile Management
 

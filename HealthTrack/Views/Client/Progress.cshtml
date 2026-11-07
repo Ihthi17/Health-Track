@@ -1,0 +1,219 @@
+@model ClientProgressViewModel
+
+@{
+    ViewData["Title"] = "My Progress";
+    Layout = "~/Views/Shared/_ClientLayout.cshtml";
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">My Progress</h1>
+    <p class="text-muted mb-0">Record your measurements and see how you're improving over time.</p>
+</div>
+
+@* ----- Success / error messages after saving or deleting ----- *@
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success"><i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-1"></i> @TempData["ErrorMessage"]</div>
+}
+
+<div class="row g-3 mb-4">
+    <!-- ===== Add measurement form ===== -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header"><h5><i class="fas fa-plus-circle me-1"></i> Add Measurement</h5></div>
+            <div class="card-body">
+                <form asp-action="AddMetric" method="post" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+
+                    <div class="mb-2">
+                        <label asp-for="NewMetric.MeasuredOn" class="form-label"></label>
+                        <input asp-for="NewMetric.MeasuredOn" type="date" class="form-control"
+                               max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        <span asp-validation-for="NewMetric.MeasuredOn" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label asp-for="NewMetric.WeightKg" class="form-label"></label>
+                            <input asp-for="NewMetric.WeightKg" type="number" step="0.1" min="20" max="400" class="form-control" />
+                            <span asp-validation-for="NewMetric.WeightKg" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="NewMetric.HeightCm" class="form-label"></label>
+                            <input asp-for="NewMetric.HeightCm" type="number" step="0.1" min="50" max="250" class="form-control" />
+                            <span asp-validation-for="NewMetric.HeightCm" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <p class="small text-muted mb-2">
+                        <i class="fas fa-info-circle"></i> BMI is calculated automatically from your weight and height.
+                    </p>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label asp-for="NewMetric.BloodPressure" class="form-label"></label>
+                            <input asp-for="NewMetric.BloodPressure" class="form-control" placeholder="120/80" maxlength="7" />
+                            <span asp-validation-for="NewMetric.BloodPressure" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="NewMetric.HeartRate" class="form-label"></label>
+                            <input asp-for="NewMetric.HeartRate" type="number" min="30" max="220" class="form-control" />
+                            <span asp-validation-for="NewMetric.HeartRate" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label asp-for="NewMetric.BloodSugar" class="form-label"></label>
+                            <input asp-for="NewMetric.BloodSugar" type="number" step="0.1" min="1" max="600" class="form-control" />
+                            <span asp-validation-for="NewMetric.BloodSugar" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="NewMetric.BodyFatPercent" class="form-label"></label>
+                            <input asp-for="NewMetric.BodyFatPercent" type="number" step="0.1" min="2" max="70" class="form-control" />
+                            <span asp-validation-for="NewMetric.BodyFatPercent" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-save me-1"></i> Save Measurement
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Weight & BMI chart ===== -->
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header"><h5><i class="fas fa-chart-line me-1"></i> Weight &amp; BMI Trend</h5></div>
+            <div class="card-body">
+                @if (Model.History.Count < 2)
+                {
+                    <p class="text-muted">Add at least two measurements to see your trend.</p>
+                }
+                <canvas id="weightChart" height="140"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Calories chart (from workout and meal logs) ===== -->
+<div class="card mb-4">
+    <div class="card-header"><h5><i class="fas fa-fire me-1"></i> Calories – Last 14 Days</h5></div>
+    <div class="card-body">
+        <canvas id="caloriesChart" height="90"></canvas>
+    </div>
+</div>
+
+<!-- ===== History table ===== -->
+<div class="card">
+    <div class="card-header"><h5><i class="fas fa-history me-1"></i> Measurement History</h5></div>
+    <div class="card-body p-0">
+        @if (Model.History.Count == 0)
+        {
+            <p class="text-muted p-4 mb-0">No measurements yet. Add your first one above.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Weight (kg)</th>
+                            <th>BMI</th>
+                            <th>Blood pressure</th>
+                            <th>Heart rate</th>
+                            <th>Blood sugar</th>
+                            <th>Body fat %</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in Model.History)
+                        {
+                            <tr>
+                                <td>@m.MeasuredOn.ToString("dd MMM yyyy")</td>
+                                <td>@(m.WeightKg?.ToString("0.0") ?? "–")</td>
+                                <td>@(m.BMI?.ToString("0.0") ?? "–")</td>
+                                <td>@(m.BloodPressure ?? "–")</td>
+                                <td>@(m.HeartRate?.ToString() ?? "–")</td>
+                                <td>@(m.BloodSugar?.ToString("0.0") ?? "–")</td>
+                                <td>@(m.BodyFatPercent?.ToString("0.0") ?? "–")</td>
+                                <td class="text-end">
+                                    <form asp-action="DeleteMetric" asp-route-id="@m.MetricID" method="post"
+                                          onsubmit="return confirm('Delete this measurement?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    // Chart.js is loaded at the end of the layout, so wait until the page has finished loading
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Weight & BMI line chart ---
+        new Chart(document.getElementById('weightChart'), {
+            type: 'line',
+            data: {
+                labels: @Json.Serialize(Model.ChartDates),
+                datasets: [
+                    {
+                        label: 'Weight (kg)',
+                        data: @Json.Serialize(Model.ChartWeights),
+                        borderColor: '#16A6A1',
+                        backgroundColor: 'rgba(22,166,161,0.15)',
+                        tension: 0.3,
+                        spanGaps: true,
+                        yAxisID: 'yWeight'
+                    },
+                    {
+                        label: 'BMI',
+                        data: @Json.Serialize(Model.ChartBmis),
+                        borderColor: '#123B4A',
+                        backgroundColor: 'rgba(18,59,74,0.15)',
+                        tension: 0.3,
+                        spanGaps: true,
+                        yAxisID: 'yBmi'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    yWeight: { type: 'linear', position: 'left', title: { display: true, text: 'kg' } },
+                    yBmi: { type: 'linear', position: 'right', title: { display: true, text: 'BMI' }, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+
+        // --- Calories burned vs eaten bar chart ---
+        new Chart(document.getElementById('caloriesChart'), {
+            type: 'bar',
+            data: {
+                labels: @Json.Serialize(Model.CalorieDates),
+                datasets: [
+                    { label: 'Burned (kcal)', data: @Json.Serialize(Model.CaloriesBurned), backgroundColor: '#16A6A1' },
+                    { label: 'Eaten (kcal)', data: @Json.Serialize(Model.CaloriesEaten), backgroundColor: '#F0A93B' }
+                ]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+    });
+</script>

@@ -1,0 +1,216 @@
+@model TrainerClientProgressViewModel
+
+@{
+    ViewData["Title"] = "Client Progress";
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+    var s = Model.Summary;
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 mb-1">@s.Name</h1>
+            <p class="text-muted mb-0">Progress over the last @Model.Days days</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/trainer/workouts?clientId=@s.ClientID" class="btn btn-outline-primary"><i class="fas fa-dumbbell me-1"></i> Workout Plans</a>
+            <a href="/trainer/diets?clientId=@s.ClientID" class="btn btn-outline-primary"><i class="fas fa-apple-alt me-1"></i> Diet Plans</a>
+            <a href="/trainer/progress?days=@Model.Days" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> All Clients</a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success"><i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-1"></i> @TempData["ErrorMessage"]</div>
+    }
+
+    <!-- Summary cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <h6 class="text-muted">Current Weight</h6>
+                <h3>@(s.CurrentWeightKg.HasValue ? s.CurrentWeightKg.Value.ToString("0.0") + " kg" : "–")</h3>
+                @if (s.WeightChangeKg.HasValue)
+                {
+                    <small class="@(s.WeightChangeKg <= 0 ? "text-success" : "text-danger")">
+                        @(s.WeightChangeKg > 0 ? "+" : "")@s.WeightChangeKg.Value.ToString("0.0") kg in this period
+                    </small>
+                }
+            </div></div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <h6 class="text-muted">BMI</h6>
+                <h3>@(s.CurrentBmi?.ToString("0.0") ?? "–")</h3>
+            </div></div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <h6 class="text-muted">Workouts</h6>
+                <h3>@s.WorkoutsLogged</h3>
+                <small class="text-muted">@s.CaloriesBurned.ToString("0") kcal burned</small>
+            </div></div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <h6 class="text-muted">Plan Completion</h6>
+                <h3>@(s.CompletionPercent.HasValue ? s.CompletionPercent + "%" : "–")</h3>
+                <small class="text-muted">
+                    @(s.PlanItemsScheduled > 0 ? $"{s.PlanItemsDone} of {s.PlanItemsScheduled} planned exercises" : "No active plan")
+                </small>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Weight & BMI chart -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-chart-line me-2"></i> Weight &amp; BMI</h5></div>
+                <div class="card-body">
+                    @if (Model.ChartDates.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No measurements in this period.</p>
+                    }
+                    else
+                    {
+                        <canvas id="weightChart" height="150"></canvas>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-comment-dots me-2"></i> Feedback</h5></div>
+                <div class="card-body">
+                    <form method="post" action="/trainer/progress/@s.ClientID/feedback?days=@Model.Days" novalidate class="mb-3">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+                        <label asp-for="NewFeedback.Message" class="form-label"></label>
+                        <textarea asp-for="NewFeedback.Message" class="form-control mb-2" rows="3" maxlength="1000"
+                                  placeholder="e.g. Great consistency this week! Try adding 5 more minutes to your runs."></textarea>
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-paper-plane me-1"></i> Send Feedback</button>
+                    </form>
+
+                    @if (Model.Feedback.Count == 0)
+                    {
+                        <p class="text-muted small mb-0">You haven't given this client feedback yet.</p>
+                    }
+                    else
+                    {
+                        @foreach (var f in Model.Feedback)
+                        {
+                            <div class="border-top pt-2 mt-2">
+                                <p class="mb-1 small">“@f.Message”</p>
+                                <small class="text-muted">@f.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</small>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Recent workouts -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-dumbbell me-2"></i> Recent Workouts</h5></div>
+                <div class="card-body p-0">
+                    @if (Model.RecentWorkouts.Count == 0)
+                    {
+                        <p class="text-muted p-3 mb-0">No workouts logged in this period.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light"><tr><th>Date</th><th>Exercise</th><th>Done</th><th>kcal</th></tr></thead>
+                            <tbody>
+                                @foreach (var w in Model.RecentWorkouts)
+                                {
+                                    <tr>
+                                        <td>@w.LogDate.ToString("dd MMM")</td>
+                                        <td>
+                                            @(w.Exercise?.ExerciseName ?? "–")
+                                            @if (w.PlanItemID.HasValue) { <span class="badge bg-info ms-1">Plan</span> }
+                                        </td>
+                                        <td class="small">
+                                            @(w.Sets.HasValue && w.Reps.HasValue ? $"{w.Sets}×{w.Reps}" : "")
+                                            @(w.DurationMin.HasValue ? $" {w.DurationMin} min" : "")
+                                        </td>
+                                        <td>@(w.CaloriesBurned?.ToString("0") ?? "–")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent meals -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-utensils me-2"></i> Recent Meals</h5></div>
+                <div class="card-body p-0">
+                    @if (Model.RecentMeals.Count == 0)
+                    {
+                        <p class="text-muted p-3 mb-0">No meals logged in this period.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light"><tr><th>Date</th><th>Meal</th><th>Food</th><th>kcal</th></tr></thead>
+                            <tbody>
+                                @foreach (var m in Model.RecentMeals)
+                                {
+                                    <tr>
+                                        <td>@m.LogDate.ToString("dd MMM")</td>
+                                        <td><span class="badge bg-light text-dark">@m.MealType</span></td>
+                                        <td>@m.FoodName</td>
+                                        <td>@(m.Calories?.ToString() ?? "–")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.ChartDates.Count > 0)
+{
+    <script>
+        // Chart.js is loaded at the end of the trainer layout, so wait for the page to finish loading
+        document.addEventListener('DOMContentLoaded', function () {
+            new Chart(document.getElementById('weightChart'), {
+                type: 'line',
+                data: {
+                    labels: @Json.Serialize(Model.ChartDates),
+                    datasets: [
+                        { label: 'Weight (kg)', data: @Json.Serialize(Model.ChartWeights), borderColor: '#16A6A1',
+                          backgroundColor: 'rgba(22,166,161,0.15)', tension: 0.3, spanGaps: true, yAxisID: 'yWeight' },
+                        { label: 'BMI', data: @Json.Serialize(Model.ChartBmis), borderColor: '#123B4A',
+                          backgroundColor: 'rgba(18,59,74,0.15)', tension: 0.3, spanGaps: true, yAxisID: 'yBmi' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        yWeight: { type: 'linear', position: 'left', title: { display: true, text: 'kg' } },
+                        yBmi: { type: 'linear', position: 'right', title: { display: true, text: 'BMI' }, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        });
+    </script>
+}

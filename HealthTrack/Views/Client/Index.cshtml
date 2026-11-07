@@ -1,0 +1,244 @@
+@model ClientDashboardViewModel
+
+@{
+    ViewData["Title"] = "My Dashboard";
+    Layout = "~/Views/Shared/_ClientLayout.cshtml";
+
+    // Day names used to show the plan schedule (0 = Sunday ... 6 = Saturday)
+    string[] dayNames = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">Hello, @Model.FirstName <span class="fs-4">👋</span></h1>
+    <p class="text-muted mb-0">
+        @DateTime.Today.ToString("dddd, dd MMMM yyyy")
+        @if (!string.IsNullOrEmpty(Model.TrainerName))
+        {
+            <span> · Your trainer: <strong>@Model.TrainerName</strong></span>
+        }
+        else
+        {
+            <span> · No trainer assigned yet</span>
+        }
+    </p>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        <i class="fas fa-exclamation-circle me-1"></i> @Model.ErrorMessage
+    </div>
+}
+else
+{
+    @if (Model.UnreadNotifications > 0)
+    {
+        <div class="alert alert-info d-flex align-items-center" role="alert">
+            <i class="fas fa-bell me-2"></i>
+            You have <strong class="mx-1">@Model.UnreadNotifications</strong> unread notification(s).
+            <a href="/notifications" class="ms-2 alert-link">View</a>
+        </div>
+    }
+
+    <!-- ===== Health stats ===== -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-sm-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1"><i class="fas fa-weight me-1"></i> Weight</h6>
+                    <h3 class="mb-0">
+                        @(Model.LatestMetric?.WeightKg?.ToString("0.0") ?? "—") <small class="fs-6 text-muted">kg</small>
+                    </h3>
+                    @if (Model.WeightChangeKg.HasValue)
+                    {
+                        var change = Model.WeightChangeKg.Value;
+                        <small class="@(change <= 0 ? "text-success" : "text-warning")">
+                            @(change > 0 ? "+" : "")@change.ToString("0.0") kg since last entry
+                        </small>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1"><i class="fas fa-calculator me-1"></i> BMI</h6>
+                    <h3 class="mb-0">@(Model.LatestMetric?.BMI?.ToString("0.0") ?? "—")</h3>
+                    @if (Model.LatestMetric != null)
+                    {
+                        <small class="text-muted">Measured @Model.LatestMetric.MeasuredOn.ToString("dd MMM yyyy")</small>
+                    }
+                    else
+                    {
+                        <small class="text-muted">No measurements yet</small>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1"><i class="fas fa-fire me-1"></i> Burned this week</h6>
+                    <h3 class="mb-0">@Model.CaloriesBurnedThisWeek.ToString("0") <small class="fs-6 text-muted">kcal</small></h3>
+                    <small class="text-muted">@Model.WorkoutsThisWeek workout(s) logged</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1"><i class="fas fa-utensils me-1"></i> Eaten today</h6>
+                    <h3 class="mb-0">@Model.CaloriesEatenToday <small class="fs-6 text-muted">kcal</small></h3>
+                    @if (Model.ActiveDietPlan?.DailyCalories != null)
+                    {
+                        <small class="text-muted">Target: @Model.ActiveDietPlan.DailyCalories kcal</small>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- ===== Today's workout (from the trainer's plan) ===== -->
+        <div class="col-lg-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="fas fa-dumbbell me-1"></i> Today's Workout
+                </div>
+                <div class="card-body">
+                    @if (Model.ActiveWorkoutPlan == null)
+                    {
+                        <p class="text-muted mb-0">Your trainer hasn't assigned a workout plan yet.</p>
+                    }
+                    else
+                    {
+                        <p class="mb-2"><strong>@Model.ActiveWorkoutPlan.PlanName</strong></p>
+                        @if (Model.TodaysExercises.Count == 0)
+                        {
+                            <p class="text-muted mb-0">Rest day — nothing scheduled for @(dayNames[(int)DateTime.Today.DayOfWeek]).</p>
+                        }
+                        else
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var item in Model.TodaysExercises)
+                                {
+                                    <li class="list-group-item px-0 d-flex justify-content-between">
+                                        <span>@(item.Exercise?.ExerciseName ?? "Exercise")</span>
+                                        <span class="text-muted">
+                                            @if (item.Sets.HasValue && item.Reps.HasValue)
+                                            {
+                                                <span>@item.Sets × @item.Reps</span>
+                                            }
+                                            @if (item.DurationMin.HasValue)
+                                            {
+                                                <span> · @item.DurationMin min</span>
+                                            }
+                                            @if (item.ReminderTime.HasValue)
+                                            {
+                                                <span> · @(item.ReminderTime.Value.ToString("hh\\:mm"))</span>
+                                            }
+                                        </span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Diet plan (from the trainer) ===== -->
+        <div class="col-lg-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="fas fa-apple-alt me-1"></i> Diet Schedule
+                </div>
+                <div class="card-body">
+                    @if (Model.ActiveDietPlan == null)
+                    {
+                        <p class="text-muted mb-0">Your trainer hasn't assigned a diet plan yet.</p>
+                    }
+                    else
+                    {
+                        <p class="mb-2"><strong>@Model.ActiveDietPlan.PlanName</strong></p>
+                        <ul class="list-group list-group-flush">
+                            @foreach (var meal in Model.ActiveDietPlan.Meals.OrderBy(m => m.MealTime))
+                            {
+                                <li class="list-group-item px-0 d-flex justify-content-between">
+                                    <span><span class="badge bg-light text-dark me-1">@meal.MealType</span> @meal.MealName</span>
+                                    <span class="text-muted">
+                                        @if (meal.Calories.HasValue) { <span>@meal.Calories kcal</span> }
+                                        @if (meal.MealTime.HasValue) { <span> · @(meal.MealTime.Value.ToString("hh\\:mm"))</span> }
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Upcoming appointments ===== -->
+        <div class="col-lg-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="fas fa-calendar me-1"></i> Upcoming Appointments
+                </div>
+                <div class="card-body">
+                    @if (Model.UpcomingAppointments.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No upcoming appointments.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var appt in Model.UpcomingAppointments)
+                            {
+                                var badge = appt.Status == "Approved" ? "bg-success"
+                                          : appt.Status == "Pending" ? "bg-warning text-dark"
+                                          : "bg-secondary";
+                                <li class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>@appt.StartTime.ToString("ddd dd MMM, hh:mm tt")</strong>
+                                        <span class="badge @badge">@appt.Status</span>
+                                    </div>
+                                    <small class="text-muted">
+                                        with @(appt.Trainer?.User?.FirstName ?? "your trainer")
+                                        @if (!string.IsNullOrEmpty(appt.Reason)) { <span> · @appt.Reason</span> }
+                                    </small>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Trainer feedback ===== -->
+        <div class="col-lg-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="fas fa-comment-dots me-1"></i> Feedback from your Trainer
+                </div>
+                <div class="card-body">
+                    @if (Model.RecentFeedback.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No feedback yet.</p>
+                    }
+                    else
+                    {
+                        @foreach (var fb in Model.RecentFeedback)
+                        {
+                            <div class="mb-3">
+                                <p class="mb-1">“@fb.Message”</p>
+                                <small class="text-muted">
+                                    — @(fb.Trainer?.User?.FirstName ?? "Trainer"), @fb.CreatedAt.ToString("dd MMM yyyy")
+                                </small>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
